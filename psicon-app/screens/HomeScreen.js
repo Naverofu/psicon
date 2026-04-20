@@ -10,12 +10,11 @@ import {
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// IMPORTAÇÃO CORRIGIDA: Usando a biblioteca moderna e atualizada
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const [humorSelecionado, setHumorSelecionado] = useState(null);
   const [menuVisivel, setMenuVisivel] = useState(false);
 
@@ -107,7 +106,7 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        <TouchableOpacity style={styles.emergencyCard}>
+        <TouchableOpacity style={styles.emergencyCard} onPress={() => navigation.navigate('Emergencia')}>
           <View style={styles.emergencyIconContainer}>
             <Ionicons name="warning" size={28} color="#FFF" />
           </View>
@@ -119,6 +118,14 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
       </ScrollView>
+
+      {/* BOTÃO FLUTUANTE DE CHAT */}
+      <TouchableOpacity
+        style={styles.floatingChatButton}
+        onPress={() => navigation.navigate('Chat')}
+      >
+        <Ionicons name="chatbubbles" size={28} color="#131826" />
+      </TouchableOpacity>
 
       <Modal visible={menuVisivel} transparent={true} animationType="none" onRequestClose={fecharMenu}>
         <View style={styles.modalOverlay}>
@@ -134,21 +141,24 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.menuItemsContainer}>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Perfil'), 250); }}>
                 <Ionicons name="person-outline" size={22} color="#131826" />
                 <Text style={styles.menuItemText}>Meu Perfil</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Configuracoes'), 250); }}>
                 <Ionicons name="settings-outline" size={22} color="#131826" />
                 <Text style={styles.menuItemText}>Configurações</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Notificacoes'), 250); }}>
                 <Ionicons name="notifications-outline" size={22} color="#131826" />
                 <Text style={styles.menuItemText}>Notificações</Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={fecharMenu}>
+            <TouchableOpacity style={styles.logoutButton} onPress={() => {
+              fecharMenu();
+              setTimeout(() => navigation.replace('Login'), 250);
+            }}>
               <Ionicons name="log-out-outline" size={22} color="#E53935" />
               <Text style={styles.logoutButtonText}>Sair do Aplicativo</Text>
             </TouchableOpacity>
@@ -191,6 +201,7 @@ const styles = StyleSheet.create({
   emergencyTextContainer: { flex: 1 },
   emergencyTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   emergencySubtitle: { color: '#FFCDD2', fontSize: 13, marginTop: 2, lineHeight: 18 },
+  floatingChatButton: { position: 'absolute', bottom: 110, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#05F2F2', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
   modalOverlay: { flex: 1, flexDirection: 'row' },
   modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   sideMenu: { width: width * 0.75, backgroundColor: '#FFF', height: '100%', position: 'absolute', right: 0, shadowColor: '#000', shadowOffset: { width: -5, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 },

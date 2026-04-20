@@ -14,21 +14,57 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CadastroScreen({ navigation }) {
+  // Dados do Usuário
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
+  // Dados do Dependente
   const [possuiDependente, setPossuiDependente] = useState(false);
   const [nomeDependente, setNomeDependente] = useState('');
+  const [dataNascimentoDependente, setDataNascimentoDependente] = useState('');
 
+  // Controles de UI
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
 
+  // FUNÇÃO DE MÁSCARA: Formata automaticamente a data para DD/MM/AAAA
+  const handleDateChange = (text, setDateFunction) => {
+    // 1. Remove tudo o que não for número (impede letras)
+    let cleaned = text.replace(/\D/g, '');
+
+    // 2. Limita a quantidade máxima de números para 8 (DDMMAAAA)
+    if (cleaned.length > 8) {
+      cleaned = cleaned.slice(0, 8);
+    }
+
+    // 3. Aplica as barras (/) conforme o usuário digita
+    let formatted = cleaned;
+    if (cleaned.length > 4) {
+      formatted = cleaned.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
+    } else if (cleaned.length > 2) {
+      formatted = cleaned.replace(/(\d{2})(\d{1,2})/, '$1/$2');
+    }
+
+    // 4. Salva o valor formatado
+    setDateFunction(formatted);
+  };
+
   const handleCadastro = () => {
-    // Aqui no futuro enviaremos todos esses dados para o seu Backend
-    console.log("Tentando cadastrar:", { nome, email, dataNascimento, possuiDependente, nomeDependente });
+    const payload = {
+      nomeUsuario: nome,
+      emailUsuario: email,
+      senhaUsuario: senha,
+      dataNasc: dataNascimento,
+      dependente: possuiDependente ? {
+        nomeDependente: nomeDependente,
+        dataNascimento: dataNascimentoDependente
+      } : null
+    };
+
+    console.log("Enviando para o Backend:", payload);
     navigation.replace('MainTabs');
   };
 
@@ -56,7 +92,6 @@ export default function CadastroScreen({ navigation }) {
 
           <View style={styles.formContainer}>
 
-            {/* Campo de Nome */}
             <View style={styles.inputContainer}>
               <Ionicons name="person-outline" size={20} color="#A0A0A0" style={styles.inputIcon} />
               <TextInput
@@ -69,7 +104,6 @@ export default function CadastroScreen({ navigation }) {
               />
             </View>
 
-            {/* Campo de E-mail */}
             <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color="#A0A0A0" style={styles.inputIcon} />
               <TextInput
@@ -83,23 +117,24 @@ export default function CadastroScreen({ navigation }) {
               />
             </View>
 
-            {/* Campo de Data de Nascimento */}
             <View style={styles.inputContainer}>
               <Ionicons name="calendar-outline" size={20} color="#A0A0A0" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Data de Nascimento (DD/MM/AAAA)"
+                placeholder="Sua Data de Nasc. (DD/MM/AAAA)"
                 placeholderTextColor="#A0A0A0"
                 keyboardType="numeric"
                 maxLength={10}
                 value={dataNascimento}
-                onChangeText={setDataNascimento}
+                onChangeText={(text) => handleDateChange(text, setDataNascimento)} // Máscara ativada
               />
             </View>
 
-            {/* Switch para Dependentes */}
             <View style={styles.switchContainer}>
-              <Text style={styles.switchLabel}>Adicionar perfil para um dependente?</Text>
+              <View style={styles.switchTextContainer}>
+                <Text style={styles.switchLabel}>Adicionar Dependente?</Text>
+                <Text style={styles.switchSubLabel}>Para agendar consultas para menores</Text>
+              </View>
               <Switch
                 trackColor={{ false: "#E0E0E0", true: "#E8F5E9" }}
                 thumbColor={possuiDependente ? "#168C04" : "#f4f3f4"}
@@ -108,22 +143,34 @@ export default function CadastroScreen({ navigation }) {
               />
             </View>
 
-            {/* Campo Extra se tiver Dependente */}
             {possuiDependente && (
-              <View style={[styles.inputContainer, { borderColor: '#168C04', borderWidth: 1.5 }]}>
-                <Ionicons name="people-outline" size={20} color="#168C04" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nome do Dependente"
-                  placeholderTextColor="#A0A0A0"
-                  autoCapitalize="words"
-                  value={nomeDependente}
-                  onChangeText={setNomeDependente}
-                />
+              <View style={styles.dependenteBox}>
+                <View style={[styles.inputContainer, styles.dependenteInput]}>
+                  <Ionicons name="people-outline" size={20} color="#168C04" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nome do Dependente"
+                    placeholderTextColor="#A0A0A0"
+                    autoCapitalize="words"
+                    value={nomeDependente}
+                    onChangeText={setNomeDependente}
+                  />
+                </View>
+                <View style={[styles.inputContainer, styles.dependenteInput, { marginBottom: 0 }]}>
+                  <Ionicons name="calendar-outline" size={20} color="#168C04" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Data Nasc. Dependente"
+                    placeholderTextColor="#A0A0A0"
+                    keyboardType="numeric"
+                    maxLength={10}
+                    value={dataNascimentoDependente}
+                    onChangeText={(text) => handleDateChange(text, setDataNascimentoDependente)} // Máscara ativada
+                  />
+                </View>
               </View>
             )}
 
-            {/* Campo de Senha */}
             <View style={styles.inputContainer}>
               <Ionicons name="lock-closed-outline" size={20} color="#A0A0A0" style={styles.inputIcon} />
               <TextInput
@@ -139,7 +186,6 @@ export default function CadastroScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Campo de Confirmar Senha */}
             <View style={styles.inputContainer}>
               <Ionicons name="checkmark-circle-outline" size={20} color="#A0A0A0" style={styles.inputIcon} />
               <TextInput
@@ -155,19 +201,18 @@ export default function CadastroScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Botão Principal de Cadastrar */}
             <TouchableOpacity style={styles.buttonPrimary} onPress={handleCadastro}>
               <Text style={styles.buttonPrimaryText}>Cadastrar</Text>
               <Ionicons name="arrow-forward-outline" size={22} color="#131826" style={{ marginLeft: 8 }} />
             </TouchableOpacity>
 
-            {/* Link para voltar ao Login */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Já tem uma conta? </Text>
               <TouchableOpacity onPress={() => navigation.goBack()}>
                 <Text style={styles.loginText}>Fazer Login</Text>
               </TouchableOpacity>
             </View>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -252,13 +297,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    borderRadius: 15,
     marginBottom: 16,
-    paddingHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  switchTextContainer: {
+    flex: 1,
   },
   switchLabel: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#131826',
+  },
+  switchSubLabel: {
+    fontSize: 12,
+    color: '#A0A0A0',
+    marginTop: 2,
+  },
+  dependenteBox: {
+    backgroundColor: '#F7FCF8',
+    padding: 15,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+    marginBottom: 16,
+  },
+  dependenteInput: {
+    borderColor: '#168C04',
+    borderWidth: 1,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonPrimary: {
     backgroundColor: '#05F2F2',
