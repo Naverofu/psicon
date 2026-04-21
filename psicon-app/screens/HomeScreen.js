@@ -87,7 +87,12 @@ export default function HomeScreen({ navigation }) {
           </View>
           <Text style={styles.doctorName}>Dra. Ana Souza</Text>
           <Text style={styles.appointmentTime}>14:00 - 15:00 • Terapia Cognitiva</Text>
-          <TouchableOpacity style={styles.joinButton}>
+
+          {/* AQUI ESTÁ A CORREÇÃO: Botão de Entrar na Sala agora leva pro Chat! */}
+          <TouchableOpacity
+            style={styles.joinButton}
+            onPress={() => navigation.navigate('Chat')}
+          >
             <Ionicons name="videocam" size={18} color="#131826" style={{ marginRight: 8 }} />
             <Text style={styles.joinButtonText}>Entrar na Sala</Text>
           </TouchableOpacity>
@@ -119,7 +124,7 @@ export default function HomeScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* BOTÃO FLUTUANTE DE CHAT */}
+      {/* Botão flutuante mantido caso o usuário role a tela para baixo */}
       <TouchableOpacity
         style={styles.floatingChatButton}
         onPress={() => navigation.navigate('Chat')}
@@ -145,6 +150,13 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="person-outline" size={22} color="#131826" />
                 <Text style={styles.menuItemText}>Meu Perfil</Text>
               </TouchableOpacity>
+
+              {/* Botão de Pagamentos no Menu Lateral */}
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Pagamentos'), 250); }}>
+                <Ionicons name="card-outline" size={22} color="#131826" />
+                <Text style={styles.menuItemText}>Pagamentos</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Configuracoes'), 250); }}>
                 <Ionicons name="settings-outline" size={22} color="#131826" />
                 <Text style={styles.menuItemText}>Configurações</Text>

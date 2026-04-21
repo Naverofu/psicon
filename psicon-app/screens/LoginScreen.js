@@ -20,7 +20,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = () => {
     console.log("Tentando logar com:", email, senha);
-    navigation.navigate('MainTabs');
+    navigation.navigate('PsicologoTabs');
   };
 
   return (
