@@ -6,7 +6,6 @@ import { CurvedBottomBar } from 'react-native-curved-bottom-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Importações do Paciente
 import LoginScreen from './screens/LoginScreen';
 import CadastroScreen from './screens/CadastroScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -19,17 +18,15 @@ import EmergenciaScreen from './screens/EmergenciaScreen';
 import ChatScreen from './screens/ChatScreen';
 import PagamentoScreen from './screens/PagamentoScreen';
 
-// NOVAS Importações do Psicólogo
 import PsicologoHomeScreen from './screens/PsicologoHomeScreen';
 import ProntuariosScreen from './screens/ProntuariosScreen';
 import PsicologoAgendaScreen from './screens/PsicologoAgendaScreen';
 import ProntuarioDetalheScreen from './screens/ProntuarioDetalheScreen';
+import PsicologoFinancasScreen from './screens/PsicologoFinancasScreen';
+import PsicologoInboxScreen from './screens/PsicologoInboxScreen';
 
 const Stack = createNativeStackNavigator();
 
-// ==========================================
-// TABS DO PACIENTE
-// ==========================================
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const _renderIcon = (routeName, selectedTab) => {
@@ -66,9 +63,6 @@ function MainTabs() {
   );
 }
 
-// ==========================================
-// TABS DO PSICÓLOGO (NOVO)
-// ==========================================
 function PsicologoTabs() {
   const insets = useSafeAreaInsets();
   const _renderIcon = (routeName, selectedTab) => {
@@ -105,9 +99,6 @@ function PsicologoTabs() {
   );
 }
 
-// ==========================================
-// NAVEGAÇÃO PRINCIPAL
-// ==========================================
 export default function App() {
   return (
     <NavigationContainer>
@@ -115,8 +106,6 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Cadastro" component={CadastroScreen} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
-
-        {/* INSERIDO: Rota principal do Psicólogo */}
         <Stack.Screen name="PsicologoTabs" component={PsicologoTabs} />
 
         <Stack.Screen name="Perfil" component={PerfilScreen} />
@@ -125,7 +114,10 @@ export default function App() {
         <Stack.Screen name="Emergencia" component={EmergenciaScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="Pagamentos" component={PagamentoScreen} />
+
         <Stack.Screen name="ProntuarioDetalhe" component={ProntuarioDetalheScreen} />
+        <Stack.Screen name="PsicologoFinancas" component={PsicologoFinancasScreen} />
+        <Stack.Screen name="PsicologoInbox" component={PsicologoInboxScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

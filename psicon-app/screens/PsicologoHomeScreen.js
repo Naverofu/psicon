@@ -1,17 +1,32 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  Modal,
+  Animated,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function PsicologoHomeScreen({ navigation }) {
+const { width } = Dimensions.get('window');
 
-  // Simulando a agenda do dia do Psicólogo
+export default function PsicologoHomeScreen({ navigation }) {
+  const [menuVisivel, setMenuVisivel] = useState(false);
+  const slideAnim = useRef(new Animated.Value(width)).current;
+
+  const abrirMenu = () => {
+    setMenuVisivel(true);
+    Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+  };
+
+  const fecharMenu = () => {
+    Animated.timing(slideAnim, { toValue: width, duration: 300, useNativeDriver: true }).start(() => setMenuVisivel(false));
+  };
+
   const consultasHoje = [
     { id: '1', paciente: 'Phil', hora: '14:00', tipo: 'Terapia Cognitiva', status: 'Confirmada' },
     { id: '2', paciente: 'Maria Silva', hora: '16:00', tipo: 'Terapia de Casal', status: 'Aguardando Pagamento' },
@@ -27,7 +42,7 @@ export default function PsicologoHomeScreen({ navigation }) {
             <Text style={styles.greetingText}>Olá, Dra. Ana!</Text>
             <Text style={styles.subtitleText}>Você tem 2 consultas agendadas hoje.</Text>
           </View>
-          <TouchableOpacity style={styles.profileButton}>
+          <TouchableOpacity style={styles.profileButton} onPress={abrirMenu}>
             <Text style={styles.profileText}>AS</Text>
           </TouchableOpacity>
         </View>
@@ -49,7 +64,7 @@ export default function PsicologoHomeScreen({ navigation }) {
         {/* Agenda do Dia */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Agenda de Hoje</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Horarios')}>
             <Text style={styles.linkText}>Ver Calendário</Text>
           </TouchableOpacity>
         </View>
@@ -70,12 +85,18 @@ export default function PsicologoHomeScreen({ navigation }) {
             <Text style={styles.consultaTipo}>{consulta.tipo}</Text>
 
             <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.actionButton}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('ProntuarioDetalhe')}
+              >
                 <Ionicons name="document-text-outline" size={18} color="#131826" style={{ marginRight: 6 }} />
                 <Text style={styles.actionButtonText}>Prontuário</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionButton, styles.actionButtonPrimary]}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonPrimary]}
+                onPress={() => navigation.navigate('Chat')}
+              >
                 <Ionicons name="videocam" size={18} color="#131826" style={{ marginRight: 6 }} />
                 <Text style={styles.actionButtonText}>Iniciar Sessão</Text>
               </TouchableOpacity>
@@ -93,14 +114,14 @@ export default function PsicologoHomeScreen({ navigation }) {
             <Text style={styles.quickActionText}>Convidar Paciente</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickActionCard}>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('PsicologoFinancas')}>
             <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
               <Ionicons name="cash-outline" size={24} color="#168C04" />
             </View>
             <Text style={styles.quickActionText}>Finanças</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickActionCard}>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('Horarios')}>
             <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
               <Ionicons name="time-outline" size={24} color="#F57C00" />
             </View>
@@ -109,13 +130,64 @@ export default function PsicologoHomeScreen({ navigation }) {
         </View>
 
       </ScrollView>
+
+      {/* Botão Flutuante da Caixa de Entrada de Mensagens */}
+      <TouchableOpacity
+        style={styles.floatingChatButton}
+        onPress={() => navigation.navigate('PsicologoInbox')}
+      >
+        <Ionicons name="chatbubbles" size={28} color="#131826" />
+      </TouchableOpacity>
+
+      {/* Menu Lateral do Psicólogo */}
+      <Modal visible={menuVisivel} transparent={true} animationType="none" onRequestClose={fecharMenu}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackground} activeOpacity={1} onPress={fecharMenu} />
+
+          <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
+            <View style={styles.sideMenuHeader}>
+              <View style={styles.sideMenuProfile}>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#131826' }}>AS</Text>
+              </View>
+              <Text style={styles.sideMenuName}>Dra. Ana Souza</Text>
+              <Text style={styles.sideMenuEmail}>CRP: 06/123456</Text>
+            </View>
+
+            <View style={styles.menuItemsContainer}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Perfil'), 250); }}>
+                <Ionicons name="person-outline" size={22} color="#131826" />
+                <Text style={styles.menuItemText}>Meu Perfil Profissional</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('PsicologoFinancas'), 250); }}>
+                <Ionicons name="cash-outline" size={22} color="#131826" />
+                <Text style={styles.menuItemText}>Painel Financeiro</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Configuracoes'), 250); }}>
+                <Ionicons name="settings-outline" size={22} color="#131826" />
+                <Text style={styles.menuItemText}>Configurações</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.logoutButton} onPress={() => {
+              fecharMenu();
+              setTimeout(() => navigation.replace('Login'), 250);
+            }}>
+              <Ionicons name="log-out-outline" size={22} color="#E53935" />
+              <Text style={styles.logoutButtonText}>Sair do Aplicativo</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
-  scrollContainer: { padding: 20, paddingBottom: 40 },
+  scrollContainer: { padding: 20, paddingBottom: 120 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, marginBottom: 25 },
   greetingText: { fontSize: 26, fontWeight: 'bold', color: '#131826' },
   subtitleText: { fontSize: 15, color: '#A0A0A0', marginTop: 4 },
@@ -143,4 +215,17 @@ const styles = StyleSheet.create({
   quickActionCard: { flex: 0.31, backgroundColor: '#FFF', padding: 15, borderRadius: 15, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
   quickActionIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   quickActionText: { fontSize: 12, fontWeight: '600', color: '#131826', textAlign: 'center' },
+  floatingChatButton: { position: 'absolute', bottom: 110, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#05F2F2', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  modalOverlay: { flex: 1, flexDirection: 'row' },
+  modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  sideMenu: { width: width * 0.75, backgroundColor: '#FFF', height: '100%', position: 'absolute', right: 0, shadowColor: '#000', shadowOffset: { width: -5, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 },
+  sideMenuHeader: { backgroundColor: '#05F2F2', padding: 30, paddingTop: 60, borderBottomLeftRadius: 30 },
+  sideMenuProfile: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  sideMenuName: { color: '#131826', fontSize: 22, fontWeight: 'bold' },
+  sideMenuEmail: { color: '#131826', fontSize: 14 },
+  menuItemsContainer: { padding: 20, paddingTop: 30 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  menuItemText: { fontSize: 16, color: '#131826', fontWeight: '500', marginLeft: 15 },
+  logoutButton: { flexDirection: 'row', alignItems: 'center', position: 'absolute', bottom: 40, left: 20 },
+  logoutButtonText: { color: '#E53935', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
 });
