@@ -85,13 +85,32 @@ export default function CadastroScreen({ navigation }) {
         disponivelEmergencia: false
       };
 
-      // 1. Cadastra primeiro o Usuário Titular
+      // 1ª CHAMADA DA API: Cadastra primeiro o Usuário Titular
       const response = await api.post('/usuarios/cadastrar', payloadUsuario);
 
-      // 👇 O TRATAMENTO PARA NAVEGAR CORRETAMENTE NA WEB E NO CELULAR 👇
+      // Pegamos o ID que o Java acabou de criar para esse usuário
+      const idUsuarioCriado = response.data.idUsuario;
+
+      // 2ª CHAMADA DA API: Se tiver dependente, cadastra o filho atrelado ao Titular
+      if (!isPsicologo && possuiDependente) {
+        try {
+          const payloadDependente = {
+            nomeDependente: nomeDependente,
+            dataNasc: dataNascimentoDependente,
+            grauParentesco: 'Filho(a)' // Enviando valor padrão exigido pelo backend
+          };
+          await api.post(`/dependentes/titular/${idUsuarioCriado}`, payloadDependente);
+        } catch (depError) {
+          console.log("Erro ao salvar dependente:", depError);
+          // Não paramos o fluxo se o dependente falhar, apenas avisamos no log.
+          // O titular já foi criado com sucesso.
+        }
+      }
+
+      // SUCESSO: Navega para o Login
       if (Platform.OS === 'web') {
         window.alert('Sucesso! Sua conta foi criada. Você já pode fazer login no aplicativo.');
-        navigation.navigate('Login'); // Rota exata conforme o seu App.js
+        navigation.navigate('Login');
       } else {
         Alert.alert(
           'Sucesso!',
@@ -104,7 +123,7 @@ export default function CadastroScreen({ navigation }) {
       if (error.response && error.response.status === 400) {
         Alert.alert('Erro no Cadastro', 'Dados inválidos ou e-mail já em uso. Verifique e tente novamente.');
       } else {
-        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique se o Spring Boot está a correr.');
+        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique se o Spring Boot está a rodar.');
       }
     } finally {
       setCarregando(false);
