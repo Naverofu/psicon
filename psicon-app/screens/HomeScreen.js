@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -18,7 +19,30 @@ export default function HomeScreen({ navigation }) {
   const [humorSelecionado, setHumorSelecionado] = useState(null);
   const [menuVisivel, setMenuVisivel] = useState(false);
 
+  // Variáveis para guardar os dados carregados do perfil
+  const [nomeUsuario, setNomeUsuario] = useState('Paciente');
+  const [emailUsuario, setEmailUsuario] = useState('');
+
   const slideAnim = useRef(new Animated.Value(width)).current;
+
+  // Lógica para puxar os dados do utilizador assim que a tela abre
+  useEffect(() => {
+    const carregarDadosUsuario = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('usuarioData');
+        if (jsonValue != null) {
+          const usuario = JSON.parse(jsonValue);
+          const primeiroNome = usuario.nomeUsuario.split(' ')[0]; // Pega apenas o primeiro nome
+          setNomeUsuario(primeiroNome);
+          setEmailUsuario(usuario.emailUsuario);
+        }
+      } catch (error) {
+        console.log("Erro ao carregar os dados:", error);
+      }
+    };
+
+    carregarDadosUsuario();
+  }, []);
 
   const abrirMenu = () => {
     setMenuVisivel(true);
@@ -57,7 +81,8 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.header}>
           <View>
-            <Text style={styles.greetingText}>Olá, Phil!</Text>
+            {/* O nome é puxado dinamicamente aqui */}
+            <Text style={styles.greetingText}>Olá, {nomeUsuario}!</Text>
             <Text style={styles.subtitleText}>Como você está se sentindo hoje?</Text>
           </View>
           <TouchableOpacity onPress={abrirMenu} style={styles.profileButton}>
@@ -141,8 +166,9 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.sideMenuProfile}>
                 <Ionicons name="person" size={32} color="#FFF" />
               </View>
-              <Text style={styles.sideMenuName}>Phil</Text>
-              <Text style={styles.sideMenuEmail}>phil@psicon.com.br</Text>
+              {/* O nome e e-mail no menu lateral agora são dinâmicos */}
+              <Text style={styles.sideMenuName}>{nomeUsuario}</Text>
+              <Text style={styles.sideMenuEmail}>{emailUsuario}</Text>
             </View>
 
             <View style={styles.menuItemsContainer}>
