@@ -8,18 +8,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Switch
+  Switch,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import api from '../services/api';
 
 export default function CadastroScreen({ navigation }) {
-  // Dados do Usuário
+  // Dados Básicos
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+
+  // INSERIDO: Dados do Psicólogo
+  const [isPsicologo, setIsPsicologo] = useState(false);
+  const [crp, setCrp] = useState('');
 
   // Dados do Dependente
   const [possuiDependente, setPossuiDependente] = useState(false);
@@ -29,43 +36,82 @@ export default function CadastroScreen({ navigation }) {
   // Controles de UI
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
-  // FUNÇÃO DE MÁSCARA: Formata automaticamente a data para DD/MM/AAAA
+  // FUNÇÃO DE MÁSCARA
   const handleDateChange = (text, setDateFunction) => {
-    // 1. Remove tudo o que não for número (impede letras)
     let cleaned = text.replace(/\D/g, '');
-
-    // 2. Limita a quantidade máxima de números para 8 (DDMMAAAA)
     if (cleaned.length > 8) {
       cleaned = cleaned.slice(0, 8);
     }
-
-    // 3. Aplica as barras (/) conforme o usuário digita
     let formatted = cleaned;
     if (cleaned.length > 4) {
       formatted = cleaned.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
     } else if (cleaned.length > 2) {
       formatted = cleaned.replace(/(\d{2})(\d{1,2})/, '$1/$2');
     }
-
-    // 4. Salva o valor formatado
     setDateFunction(formatted);
   };
 
-  const handleCadastro = () => {
-    const payload = {
-      nomeUsuario: nome,
-      emailUsuario: email,
-      senhaUsuario: senha,
-      dataNasc: dataNascimento,
-      dependente: possuiDependente ? {
-        nomeDependente: nomeDependente,
-        dataNascimento: dataNascimentoDependente
-      } : null
-    };
+  const handleCadastro = async () => {
+    // 1. Validações locais
+    if (!nome || !email || !dataNascimento || !senha || !confirmarSenha) {
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    if (senha !== confirmarSenha) {
+      Alert.alert('Atenção', 'As senhas não coincidem!');
+      return;
+    }
+    // Validação nova para Psicólogo
+    if (isPsicologo && !crp.trim()) {
+      Alert.alert('Atenção', 'Por favor, informe o seu número de CRP.');
+      return;
+    }
+    // Validação para Dependente
+    if (!isPsicologo && possuiDependente && (!nomeDependente || !dataNascimentoDependente)) {
+      Alert.alert('Atenção', 'Por favor, preencha os dados do dependente.');
+      return;
+    }
 
-    console.log("Enviando para o Backend:", payload);
-    navigation.replace('MainTabs');
+    setCarregando(true);
+
+    try {
+      const partesData = dataNascimento.split('/');
+      const anoParaOJava = partesData.length === 3 ? parseInt(partesData[2]) : 0;
+
+      const payload = {
+        nomeUsuario: nome,
+        emailUsuario: email,
+        senhaUsuario: senha,
+        dataNasc: anoParaOJava,
+        // Enviamos os dados do profissional para a API
+        psicologo: isPsicologo,
+        crp: isPsicologo ? crp : null,
+        // Só envia dependente se NÃO for conta de psicólogo
+        dependente: (!isPsicologo && possuiDependente) ? {
+          nomeDependente: nomeDependente,
+          dataNascimento: dataNascimentoDependente
+        } : null
+      };
+
+      const response = await api.post('/usuarios/cadastrar', payload);
+
+      Alert.alert(
+        'Sucesso!',
+        'Sua conta foi criada. Você já pode fazer login no aplicativo.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+
+    } catch (error) {
+      if (error.response && error.response.status === 400) {
+        Alert.alert('Erro no Cadastro', error.response.data || 'Verifique os dados informados.');
+      } else {
+        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique se o Spring Boot está rodando.');
+      }
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
@@ -126,24 +172,59 @@ export default function CadastroScreen({ navigation }) {
                 keyboardType="numeric"
                 maxLength={10}
                 value={dataNascimento}
-                onChangeText={(text) => handleDateChange(text, setDataNascimento)} // Máscara ativada
+                onChangeText={(text) => handleDateChange(text, setDataNascimento)}
               />
             </View>
 
+            {/* INSERIDO: SWITCH DO PSICÓLOGO */}
             <View style={styles.switchContainer}>
               <View style={styles.switchTextContainer}>
-                <Text style={styles.switchLabel}>Adicionar Dependente?</Text>
-                <Text style={styles.switchSubLabel}>Para agendar consultas para menores</Text>
+                <Text style={styles.switchLabel}>Sou Psicólogo(a)</Text>
+                <Text style={styles.switchSubLabel}>Criar conta como profissional</Text>
               </View>
               <Switch
                 trackColor={{ false: "#E0E0E0", true: "#E8F5E9" }}
-                thumbColor={possuiDependente ? "#168C04" : "#f4f3f4"}
-                onValueChange={setPossuiDependente}
-                value={possuiDependente}
+                thumbColor={isPsicologo ? "#168C04" : "#f4f3f4"}
+                onValueChange={(valor) => {
+                  setIsPsicologo(valor);
+                  if (valor) setPossuiDependente(false); // Se for psicólogo, desmarca dependente
+                }}
+                value={isPsicologo}
               />
             </View>
 
-            {possuiDependente && (
+            {/* INSERIDO: CAMPO DO CRP (Só aparece se o switch acima for ativado) */}
+            {isPsicologo && (
+              <View style={[styles.inputContainer, { borderColor: '#168C04', borderWidth: 1 }]}>
+                <Ionicons name="card-outline" size={20} color="#168C04" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Número do CRP (Ex: 06/12345)"
+                  placeholderTextColor="#A0A0A0"
+                  autoCapitalize="characters"
+                  value={crp}
+                  onChangeText={setCrp}
+                />
+              </View>
+            )}
+
+            {/* O switch de dependente SÓ APARECE se a pessoa NÃO for psicóloga */}
+            {!isPsicologo && (
+              <View style={styles.switchContainer}>
+                <View style={styles.switchTextContainer}>
+                  <Text style={styles.switchLabel}>Adicionar Dependente?</Text>
+                  <Text style={styles.switchSubLabel}>Para agendar consultas para menores</Text>
+                </View>
+                <Switch
+                  trackColor={{ false: "#E0E0E0", true: "#E8F5E9" }}
+                  thumbColor={possuiDependente ? "#168C04" : "#f4f3f4"}
+                  onValueChange={setPossuiDependente}
+                  value={possuiDependente}
+                />
+              </View>
+            )}
+
+            {!isPsicologo && possuiDependente && (
               <View style={styles.dependenteBox}>
                 <View style={[styles.inputContainer, styles.dependenteInput]}>
                   <Ionicons name="people-outline" size={20} color="#168C04" style={styles.inputIcon} />
@@ -165,7 +246,7 @@ export default function CadastroScreen({ navigation }) {
                     keyboardType="numeric"
                     maxLength={10}
                     value={dataNascimentoDependente}
-                    onChangeText={(text) => handleDateChange(text, setDataNascimentoDependente)} // Máscara ativada
+                    onChangeText={(text) => handleDateChange(text, setDataNascimentoDependente)}
                   />
                 </View>
               </View>
@@ -201,9 +282,15 @@ export default function CadastroScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.buttonPrimary} onPress={handleCadastro}>
-              <Text style={styles.buttonPrimaryText}>Cadastrar</Text>
-              <Ionicons name="arrow-forward-outline" size={22} color="#131826" style={{ marginLeft: 8 }} />
+            <TouchableOpacity style={styles.buttonPrimary} onPress={handleCadastro} disabled={carregando}>
+              {carregando ? (
+                <ActivityIndicator size="small" color="#131826" />
+              ) : (
+                <>
+                  <Text style={styles.buttonPrimaryText}>Cadastrar</Text>
+                  <Ionicons name="arrow-forward-outline" size={22} color="#131826" style={{ marginLeft: 8 }} />
+                </>
+              )}
             </TouchableOpacity>
 
             <View style={styles.footer}>

@@ -8,21 +8,57 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Alert // INSERIDO PARA MOSTRAR MENSAGENS DE ERRO
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import api from '../services/api'; // INSERIDO: NOSSA PONTE DE COMUNICAÇÃO COM O JAVA
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  const handleLogin = () => {
-    console.log("Tentando logar com:", email, senha);
-    navigation.navigate('PsicologoTabs');
+  // A FUNÇÃO AGORA É ASSÍNCRONA E CHAMA O SEU BACKEND REAL
+  const handleLogin = async () => {
+    if (email.trim() === '' || senha.trim() === '') {
+      Alert.alert('Atenção', 'Por favor, preencha seu e-mail e senha.');
+      return;
+    }
+
+    try {
+      // Faz a requisição POST para a rota do seu UsuarioController no Spring Boot
+      const response = await api.post('/usuarios/login', null, {
+        params: {
+          email: email,
+          senha: senha
+        }
+      });
+
+      const usuarioLogado = response.data;
+
+      // REGRA DE REDIRECIONAMENTO:
+      // Se for psicólogo (pela nossa simulação de e-mail), vai para as Tabs do Psicólogo
+      if (usuarioLogado.emailUsuario.toLowerCase().includes('psi') ||
+          usuarioLogado.emailUsuario.toLowerCase().includes('dra')) {
+        navigation.replace('PsicologoTabs');
+      } else {
+        // Se for paciente, vai para as Tabs do Paciente
+        navigation.replace('MainTabs');
+      }
+
+    } catch (error) {
+      // Se o Spring Boot retornar "Unauthorized" (senha errada), mostramos alerta
+      if (error.response && error.response.status === 401) {
+        Alert.alert('Acesso Negado', 'E-mail ou senha incorretos.');
+      } else {
+        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. O Spring Boot está rodando? O IP está correto no arquivo api.js?');
+      }
+    }
   };
 
+  // DAQUI PARA BAIXO, O SEU CÓDIGO VISUAL ESTÁ 100% INTACTO
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
