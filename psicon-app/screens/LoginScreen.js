@@ -9,18 +9,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert // INSERIDO PARA MOSTRAR MENSAGENS DE ERRO
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../services/api'; // INSERIDO: NOSSA PONTE DE COMUNICAÇÃO COM O JAVA
+import api from '../services/api';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  // A FUNÇÃO AGORA É ASSÍNCRONA E CHAMA O SEU BACKEND REAL
   const handleLogin = async () => {
     if (email.trim() === '' || senha.trim() === '') {
       Alert.alert('Atenção', 'Por favor, preencha seu e-mail e senha.');
@@ -28,19 +27,22 @@ export default function LoginScreen({ navigation }) {
     }
 
     try {
-      // Faz a requisição POST para a rota do seu UsuarioController no Spring Boot
-      const response = await api.post('/usuarios/login', null, {
-        params: {
-          email: email,
-          senha: senha
-        }
-      });
+      // 👇 A CORREÇÃO ESTÁ AQUI 👇
+      // Enviamos como um pacote JSON (Body) em vez de parâmetros na URL,
+      // e usamos os nomes exatos que o Java espera (emailUsuario e senhaUsuario)
+      const payloadLogin = {
+        emailUsuario: email,
+        senhaUsuario: senha
+      };
+
+      const response = await api.post('/usuarios/login', payloadLogin);
 
       const usuarioLogado = response.data;
 
       // REGRA DE REDIRECIONAMENTO:
-      // Se for psicólogo (pela nossa simulação de e-mail), vai para as Tabs do Psicólogo
-      if (usuarioLogado.emailUsuario.toLowerCase().includes('psi') ||
+      // Se for psicólogo, vai para as Tabs do Psicólogo
+      if (usuarioLogado.tipoUsuario === "PSICOLOGO" ||
+          usuarioLogado.emailUsuario.toLowerCase().includes('psi') ||
           usuarioLogado.emailUsuario.toLowerCase().includes('dra')) {
         navigation.replace('PsicologoTabs');
       } else {
@@ -49,16 +51,17 @@ export default function LoginScreen({ navigation }) {
       }
 
     } catch (error) {
-      // Se o Spring Boot retornar "Unauthorized" (senha errada), mostramos alerta
       if (error.response && error.response.status === 401) {
         Alert.alert('Acesso Negado', 'E-mail ou senha incorretos.');
+      } else if (error.response && error.response.status === 500) {
+        // Erro 500 geralmente ocorre se o e-mail não existir e o Java lançar uma RuntimeException
+        Alert.alert('Erro', error.response.data.message || 'E-mail não encontrado ou senha incorreta.');
       } else {
-        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. O Spring Boot está rodando? O IP está correto no arquivo api.js?');
+        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. O Spring Boot está rodando?');
       }
     }
   };
 
-  // DAQUI PARA BAIXO, O SEU CÓDIGO VISUAL ESTÁ 100% INTACTO
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -151,13 +154,12 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 30, // Reduzi um pouco a margem para compensar o aumento do logo
+    marginBottom: 30,
     width: '100%',
   },
-  // TAMANHO DO LOGO AUMENTADO AQUI (MANTENDO PROPORÇÃO)
   logo: {
-    width: 320, // Aumentado de 280
-    height: 180, // Aumentado de 160
+    width: 320,
+    height: 180,
   },
   subtitle: {
     color: '#131826',

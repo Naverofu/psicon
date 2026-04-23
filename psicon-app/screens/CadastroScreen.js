@@ -24,7 +24,7 @@ export default function CadastroScreen({ navigation }) {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
-  // INSERIDO: Dados do Psicólogo
+  // Dados do Psicólogo
   const [isPsicologo, setIsPsicologo] = useState(false);
   const [crp, setCrp] = useState('');
 
@@ -63,12 +63,10 @@ export default function CadastroScreen({ navigation }) {
       Alert.alert('Atenção', 'As senhas não coincidem!');
       return;
     }
-    // Validação nova para Psicólogo
     if (isPsicologo && !crp.trim()) {
       Alert.alert('Atenção', 'Por favor, informe o seu número de CRP.');
       return;
     }
-    // Validação para Dependente
     if (!isPsicologo && possuiDependente && (!nomeDependente || !dataNascimentoDependente)) {
       Alert.alert('Atenção', 'Por favor, preencha os dados do dependente.');
       return;
@@ -77,37 +75,36 @@ export default function CadastroScreen({ navigation }) {
     setCarregando(true);
 
     try {
-      const partesData = dataNascimento.split('/');
-      const anoParaOJava = partesData.length === 3 ? parseInt(partesData[2]) : 0;
-
-      const payload = {
+      const payloadUsuario = {
         nomeUsuario: nome,
         emailUsuario: email,
         senhaUsuario: senha,
-        dataNasc: anoParaOJava,
-        // Enviamos os dados do profissional para a API
-        psicologo: isPsicologo,
+        dataNasc: dataNascimento,
+        tipoUsuario: isPsicologo ? "PSICOLOGO" : "PACIENTE",
         crp: isPsicologo ? crp : null,
-        // Só envia dependente se NÃO for conta de psicólogo
-        dependente: (!isPsicologo && possuiDependente) ? {
-          nomeDependente: nomeDependente,
-          dataNascimento: dataNascimentoDependente
-        } : null
+        disponivelEmergencia: false
       };
 
-      const response = await api.post('/usuarios/cadastrar', payload);
+      // 1. Cadastra primeiro o Usuário Titular
+      const response = await api.post('/usuarios/cadastrar', payloadUsuario);
 
-      Alert.alert(
-        'Sucesso!',
-        'Sua conta foi criada. Você já pode fazer login no aplicativo.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      // 👇 O TRATAMENTO PARA NAVEGAR CORRETAMENTE NA WEB E NO CELULAR 👇
+      if (Platform.OS === 'web') {
+        window.alert('Sucesso! Sua conta foi criada. Você já pode fazer login no aplicativo.');
+        navigation.navigate('Login'); // Rota exata conforme o seu App.js
+      } else {
+        Alert.alert(
+          'Sucesso!',
+          'Sua conta foi criada. Você já pode fazer login no aplicativo.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        );
+      }
 
     } catch (error) {
       if (error.response && error.response.status === 400) {
-        Alert.alert('Erro no Cadastro', error.response.data || 'Verifique os dados informados.');
+        Alert.alert('Erro no Cadastro', 'Dados inválidos ou e-mail já em uso. Verifique e tente novamente.');
       } else {
-        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique se o Spring Boot está rodando.');
+        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique se o Spring Boot está a correr.');
       }
     } finally {
       setCarregando(false);
@@ -176,7 +173,6 @@ export default function CadastroScreen({ navigation }) {
               />
             </View>
 
-            {/* INSERIDO: SWITCH DO PSICÓLOGO */}
             <View style={styles.switchContainer}>
               <View style={styles.switchTextContainer}>
                 <Text style={styles.switchLabel}>Sou Psicólogo(a)</Text>
@@ -187,13 +183,12 @@ export default function CadastroScreen({ navigation }) {
                 thumbColor={isPsicologo ? "#168C04" : "#f4f3f4"}
                 onValueChange={(valor) => {
                   setIsPsicologo(valor);
-                  if (valor) setPossuiDependente(false); // Se for psicólogo, desmarca dependente
+                  if (valor) setPossuiDependente(false);
                 }}
                 value={isPsicologo}
               />
             </View>
 
-            {/* INSERIDO: CAMPO DO CRP (Só aparece se o switch acima for ativado) */}
             {isPsicologo && (
               <View style={[styles.inputContainer, { borderColor: '#168C04', borderWidth: 1 }]}>
                 <Ionicons name="card-outline" size={20} color="#168C04" style={styles.inputIcon} />
@@ -208,7 +203,6 @@ export default function CadastroScreen({ navigation }) {
               </View>
             )}
 
-            {/* O switch de dependente SÓ APARECE se a pessoa NÃO for psicóloga */}
             {!isPsicologo && (
               <View style={styles.switchContainer}>
                 <View style={styles.switchTextContainer}>
