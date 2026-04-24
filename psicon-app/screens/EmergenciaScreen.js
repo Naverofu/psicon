@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,14 +6,68 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Platform
+  Platform,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function EmergenciaScreen({ navigation }) {
 
-  // Funções para abrir o discador do celular
+  const [idPacienteAtual, setIdPacienteAtual] = useState(null);
+  const [buscandoPlantao, setBuscandoPlantao] = useState(false);
+
+  useEffect(() => {
+    const carregarPaciente = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('usuarioData');
+        if (jsonValue != null) {
+          const usuario = JSON.parse(jsonValue);
+          setIdPacienteAtual(usuario.idUsuario);
+        }
+      } catch (error) {
+        console.log("Erro ao carregar o paciente:", error);
+      }
+    };
+    carregarPaciente();
+  }, []);
+
+  const solicitarPsicologoPlantao = async () => {
+    if (!idPacienteAtual) {
+      Alert.alert("Erro", "Não foi possível identificar a sua conta.");
+      return;
+    }
+
+    setBuscandoPlantao(true);
+
+    try {
+      await api.post('/consultas/emergencia', null, {
+        params: { idPaciente: idPacienteAtual }
+      });
+
+      // 👇 CORREÇÃO: Navegação aninhada para encontrar a aba Consultas 👇
+      Alert.alert(
+        "Profissional Encontrado!",
+        "Um psicólogo de plantão aceitou o seu pedido. A sala de atendimento seguro foi criada.",
+        [
+          { text: "Entrar na Sala Agora", onPress: () => navigation.navigate('MainTabs', { screen: 'Consultas' }) }
+        ]
+      );
+
+    } catch (error) {
+      console.log("Erro ao buscar plantão:", error);
+      Alert.alert(
+        "Sem Profissionais Disponíveis",
+        "No momento, não temos psicólogos disponíveis no plantão imediato do aplicativo. Por favor, utilize os canais de resgate abaixo (CVV 188) ou tente novamente em alguns minutos."
+      );
+    } finally {
+      setBuscandoPlantao(false);
+    }
+  };
+
   const fazerLigacao = (numero) => {
     let phoneNumber = '';
     if (Platform.OS === 'android') {
@@ -43,6 +97,24 @@ export default function EmergenciaScreen({ navigation }) {
             Se você estiver em perigo imediato ou pensando em se machucar, por favor, busque ajuda profissional agora mesmo.
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={styles.plantaoCard}
+          onPress={solicitarPsicologoPlantao}
+          disabled={buscandoPlantao}
+        >
+          <View style={styles.plantaoIconContainer}>
+            {buscandoPlantao ? (
+              <ActivityIndicator size="small" color="#131826" />
+            ) : (
+              <Ionicons name="videocam" size={30} color="#131826" />
+            )}
+          </View>
+          <View style={styles.plantaoTextContainer}>
+            <Text style={styles.plantaoTitle}>Falar com Psicólogo Agora</Text>
+            <Text style={styles.plantaoSubtitle}>Conexão imediata por vídeo com um profissional de plantão na plataforma.</Text>
+          </View>
+        </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Apoio Emocional Imediato</Text>
 
@@ -84,7 +156,6 @@ export default function EmergenciaScreen({ navigation }) {
           <Ionicons name="call-outline" size={24} color="#168C04" />
         </TouchableOpacity>
 
-        {/* Card de Aterramento / Respiração */}
         <View style={styles.breatheCard}>
           <Ionicons name="leaf-outline" size={24} color="#168C04" style={{ marginBottom: 10 }} />
           <Text style={styles.breatheTitle}>Exercício de Aterramento</Text>
@@ -101,7 +172,7 @@ export default function EmergenciaScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#131826' }, // Fundo escuro para contrastar o topo
+  safeArea: { flex: 1, backgroundColor: '#131826' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20, backgroundColor: '#131826' },
   backButton: { padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
@@ -109,6 +180,11 @@ const styles = StyleSheet.create({
   warningContainer: { alignItems: 'center', backgroundColor: '#FFEBEE', padding: 20, borderRadius: 20, marginTop: 10, marginBottom: 25 },
   warningTitle: { fontSize: 20, fontWeight: 'bold', color: '#B3261E', marginBottom: 5 },
   warningText: { fontSize: 14, color: '#D32F2F', textAlign: 'center', lineHeight: 20 },
+  plantaoCard: { backgroundColor: '#05F2F2', borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', elevation: 4, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, marginBottom: 25 },
+  plantaoIconContainer: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  plantaoTextContainer: { flex: 1 },
+  plantaoTitle: { fontSize: 18, fontWeight: 'bold', color: '#131826' },
+  plantaoSubtitle: { fontSize: 13, color: '#131826', marginTop: 4, lineHeight: 18, fontWeight: '500' },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#131826', marginBottom: 12, marginLeft: 4 },
   sosCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', elevation: 4, shadowColor: '#B3261E', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, marginBottom: 25, borderWidth: 1, borderColor: '#FFCDD2' },
   sosIconContainer: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFEBEE', justifyContent: 'center', alignItems: 'center', marginRight: 15 },

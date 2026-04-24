@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,15 +8,102 @@ import {
   SafeAreaView,
   Modal,
   Animated,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 const { width } = Dimensions.get('window');
 
 export default function PsicologoHomeScreen({ navigation }) {
   const [menuVisivel, setMenuVisivel] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
+
+  // Estados do Psicólogo
+  const [psicologoId, setPsicologoId] = useState(null);
+  const [nomeUsuario, setNomeUsuario] = useState('Dra.');
+  const [iniciais, setIniciais] = useState('Psi');
+  const [crpOuEmail, setCrpOuEmail] = useState('');
+
+  // Estado da Emergência
+  const [disponivelEmergencia, setDisponivelEmergencia] = useState(false);
+  const [carregandoEmergencia, setCarregandoEmergencia] = useState(false);
+
+  // 👇 INJEÇÃO: Novos estados para a Agenda Real 👇
+  const [consultasHoje, setConsultasHoje] = useState([]);
+  const [carregandoConsultas, setCarregandoConsultas] = useState(true);
+
+  // Função central para carregar TUDO (Dados do Perfil + Consultas)
+  const carregarPainelCompleto = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('usuarioData');
+      if (jsonValue != null) {
+        const usuario = JSON.parse(jsonValue);
+        setPsicologoId(usuario.idUsuario);
+
+        // Formata o Nome e UI do Header
+        const nomeCompleto = usuario.nomeUsuario || 'Psicólogo';
+        setNomeUsuario(nomeCompleto);
+        const partesNome = nomeCompleto.split(' ');
+        let gerouIniciais = partesNome[0].charAt(0);
+        if (partesNome.length > 1) {
+          gerouIniciais += partesNome[partesNome.length - 1].charAt(0);
+        }
+        setIniciais(gerouIniciais.toUpperCase());
+        setCrpOuEmail(usuario.crp ? `CRP: ${usuario.crp}` : usuario.emailUsuario);
+        setDisponivelEmergencia(usuario.disponivelEmergencia || false);
+
+        // 👇 BUSCA A AGENDA NO BACKEND 👇
+        try {
+          const response = await api.get(`/consultas/psicologo/${usuario.idUsuario}`);
+          const todasConsultas = response.data;
+
+          const formatadas = [];
+
+          todasConsultas.forEach(c => {
+            // Filtra para exibir apenas consultas ativas no painel de hoje
+            if (c.statusConsulta === 'AGENDADA' || c.statusConsulta === 'EM_ANDAMENTO') {
+              const dataObj = new Date(c.dataHoraConsulta);
+              const horaStr = String(dataObj.getHours()).padStart(2, '0');
+              const minutoStr = String(dataObj.getMinutes()).padStart(2, '0');
+
+              formatadas.push({
+                id: c.idConsulta ? c.idConsulta.toString() : Math.random().toString(),
+                paciente: c.pacienteTitular ? c.pacienteTitular.nomeUsuario : 'Paciente',
+                hora: `${horaStr}:${minutoStr}`,
+                tipo: c.tipoConsulta === 'NORMAL' ? 'Terapia Online' : 'Plantão de Emergência',
+                status: c.statusConsulta === 'AGENDADA' ? 'Confirmada' : 'Em Plantão'
+              });
+            }
+          });
+
+          // Ordena pela hora mais próxima
+          formatadas.sort((a, b) => a.hora.localeCompare(b.hora));
+          setConsultasHoje(formatadas);
+
+        } catch (erroConsultas) {
+          console.log("Erro ao buscar agenda:", erroConsultas);
+        } finally {
+          setCarregandoConsultas(false);
+        }
+      }
+    } catch (error) {
+      console.log("Erro ao acessar o cofre:", error);
+      setCarregandoConsultas(false);
+    }
+  };
+
+  // Executa ao abrir e sempre que a tela ganha foco
+  useEffect(() => {
+    carregarPainelCompleto();
+    const unsubscribe = navigation.addListener('focus', () => {
+      setCarregandoConsultas(true);
+      carregarPainelCompleto();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const abrirMenu = () => {
     setMenuVisivel(true);
@@ -27,23 +114,47 @@ export default function PsicologoHomeScreen({ navigation }) {
     Animated.timing(slideAnim, { toValue: width, duration: 300, useNativeDriver: true }).start(() => setMenuVisivel(false));
   };
 
-  const consultasHoje = [
-    { id: '1', paciente: 'Phil', hora: '14:00', tipo: 'Terapia Cognitiva', status: 'Confirmada' },
-    { id: '2', paciente: 'Maria Silva', hora: '16:00', tipo: 'Terapia de Casal', status: 'Aguardando Pagamento' },
-  ];
+  const toggleEmergencia = async () => {
+    if (!psicologoId) return;
+    setCarregandoEmergencia(true);
+    const novoEstado = !disponivelEmergencia;
+
+    try {
+      await api.put(`/usuarios/${psicologoId}/emergencia?disponivel=${novoEstado}`);
+      setDisponivelEmergencia(novoEstado);
+
+      const jsonValue = await AsyncStorage.getItem('usuarioData');
+      if (jsonValue != null) {
+        let usuario = JSON.parse(jsonValue);
+        usuario.disponivelEmergencia = novoEstado;
+        await AsyncStorage.setItem('usuarioData', JSON.stringify(usuario));
+      }
+    } catch (error) {
+      console.log("Erro ao alterar plantão:", error);
+      alert("Não foi possível alterar o status do plantão. Verifique a conexão.");
+    } finally {
+      setCarregandoEmergencia(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
 
-        {/* Cabeçalho do Profissional */}
+        {/* Cabeçalho */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greetingText}>Olá, Dra. Ana!</Text>
-            <Text style={styles.subtitleText}>Você tem 2 consultas agendadas hoje.</Text>
+            <Text style={styles.greetingText}>Olá, {nomeUsuario.split(' ')[0]}!</Text>
+            {carregandoConsultas ? (
+               <Text style={styles.subtitleText}>Atualizando agenda...</Text>
+            ) : (
+               <Text style={styles.subtitleText}>
+                 Você tem {consultasHoje.length} {consultasHoje.length === 1 ? 'consulta agendada' : 'consultas agendadas'}.
+               </Text>
+            )}
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={abrirMenu}>
-            <Text style={styles.profileText}>AS</Text>
+            <Text style={styles.profileText}>{iniciais}</Text>
           </TouchableOpacity>
         </View>
 
@@ -69,49 +180,68 @@ export default function PsicologoHomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {consultasHoje.map((consulta) => (
-          <View key={consulta.id} style={styles.consultaCard}>
-            <View style={styles.consultaHeader}>
-              <View style={styles.timeBadge}>
-                <Ionicons name="time-outline" size={14} color="#131826" style={{ marginRight: 4 }} />
-                <Text style={styles.timeText}>{consulta.hora}</Text>
-              </View>
-              <Text style={[styles.statusText, consulta.status === 'Confirmada' ? { color: '#168C04' } : { color: '#E53935' }]}>
-                {consulta.status}
-              </Text>
-            </View>
-
-            <Text style={styles.pacienteName}>{consulta.paciente}</Text>
-            <Text style={styles.consultaTipo}>{consulta.tipo}</Text>
-
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => navigation.navigate('ProntuarioDetalhe')}
-              >
-                <Ionicons name="document-text-outline" size={18} color="#131826" style={{ marginRight: 6 }} />
-                <Text style={styles.actionButtonText}>Prontuário</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.actionButtonPrimary]}
-                onPress={() => navigation.navigate('Chat')}
-              >
-                <Ionicons name="videocam" size={18} color="#131826" style={{ marginRight: 6 }} />
-                <Text style={styles.actionButtonText}>Iniciar Sessão</Text>
-              </TouchableOpacity>
-            </View>
+        {/* 👇 Renderização Inteligente da Agenda 👇 */}
+        {carregandoConsultas ? (
+          <View style={{ paddingVertical: 30, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#05F2F2" />
           </View>
-        ))}
+        ) : consultasHoje.length === 0 ? (
+          <View style={{ paddingVertical: 30, alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, borderWidth: 1, borderColor: '#F0F0F0', marginBottom: 15 }}>
+            <Ionicons name="cafe-outline" size={40} color="#E0E0E0" />
+            <Text style={{ marginTop: 10, color: '#A0A0A0', fontWeight: '500' }}>Sua agenda está livre por enquanto.</Text>
+          </View>
+        ) : (
+          consultasHoje.map((consulta) => (
+            <View key={consulta.id} style={styles.consultaCard}>
+              <View style={styles.consultaHeader}>
+                <View style={styles.timeBadge}>
+                  <Ionicons name="time-outline" size={14} color="#131826" style={{ marginRight: 4 }} />
+                  <Text style={styles.timeText}>{consulta.hora}</Text>
+                </View>
+                <Text style={[styles.statusText, consulta.status === 'Confirmada' ? { color: '#168C04' } : { color: '#E53935' }]}>
+                  {consulta.status}
+                </Text>
+              </View>
+
+              <Text style={styles.pacienteName}>{consulta.paciente}</Text>
+              <Text style={styles.consultaTipo}>{consulta.tipo}</Text>
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => navigation.navigate('ProntuarioDetalhe')}
+                >
+                  <Ionicons name="document-text-outline" size={18} color="#131826" style={{ marginRight: 6 }} />
+                  <Text style={styles.actionButtonText}>Prontuário</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.actionButtonPrimary]}
+                  onPress={() => navigation.navigate('Chat')}
+                >
+                  <Ionicons name="videocam" size={18} color="#131826" style={{ marginRight: 6 }} />
+                  <Text style={styles.actionButtonText}>Iniciar Sessão</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
 
         {/* Ações Rápidas */}
         <Text style={[styles.sectionTitle, { marginTop: 10, marginBottom: 15 }]}>Ações Rápidas</Text>
         <View style={styles.quickActionsContainer}>
-          <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#E3F2FD' }]}>
-              <Ionicons name="person-add-outline" size={24} color="#1E88E5" />
+
+          <TouchableOpacity style={styles.quickActionCard} onPress={toggleEmergencia} disabled={carregandoEmergencia}>
+            <View style={[styles.quickActionIcon, { backgroundColor: disponivelEmergencia ? '#FFCDD2' : '#E3F2FD' }]}>
+              {carregandoEmergencia ? (
+                <ActivityIndicator size="small" color={disponivelEmergencia ? "#D32F2F" : "#1E88E5"} />
+              ) : (
+                <Ionicons name={disponivelEmergencia ? "medical" : "medical-outline"} size={24} color={disponivelEmergencia ? "#D32F2F" : "#1E88E5"} />
+              )}
             </View>
-            <Text style={styles.quickActionText}>Convidar Paciente</Text>
+            <Text style={[styles.quickActionText, disponivelEmergencia && { color: '#D32F2F', fontWeight: 'bold' }]}>
+              {disponivelEmergencia ? "Em Plantão" : "Plantão OFF"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('PsicologoFinancas')}>
@@ -131,7 +261,7 @@ export default function PsicologoHomeScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* Botão Flutuante da Caixa de Entrada de Mensagens */}
+      {/* Botão Flutuante */}
       <TouchableOpacity
         style={styles.floatingChatButton}
         onPress={() => navigation.navigate('PsicologoInbox')}
@@ -139,7 +269,7 @@ export default function PsicologoHomeScreen({ navigation }) {
         <Ionicons name="chatbubbles" size={28} color="#131826" />
       </TouchableOpacity>
 
-      {/* Menu Lateral do Psicólogo */}
+      {/* Menu Lateral */}
       <Modal visible={menuVisivel} transparent={true} animationType="none" onRequestClose={fecharMenu}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalBackground} activeOpacity={1} onPress={fecharMenu} />
@@ -147,10 +277,10 @@ export default function PsicologoHomeScreen({ navigation }) {
           <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
             <View style={styles.sideMenuHeader}>
               <View style={styles.sideMenuProfile}>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#131826' }}>AS</Text>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#131826' }}>{iniciais}</Text>
               </View>
-              <Text style={styles.sideMenuName}>Dra. Ana Souza</Text>
-              <Text style={styles.sideMenuEmail}>CRP: 06/123456</Text>
+              <Text style={styles.sideMenuName}>{nomeUsuario}</Text>
+              <Text style={styles.sideMenuEmail}>{crpOuEmail}</Text>
             </View>
 
             <View style={styles.menuItemsContainer}>
@@ -170,8 +300,9 @@ export default function PsicologoHomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={() => {
+            <TouchableOpacity style={styles.logoutButton} onPress={async () => {
               fecharMenu();
+              await AsyncStorage.removeItem('usuarioData');
               setTimeout(() => navigation.replace('Login'), 250);
             }}>
               <Ionicons name="log-out-outline" size={22} color="#E53935" />

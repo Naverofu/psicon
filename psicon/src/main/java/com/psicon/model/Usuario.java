@@ -18,12 +18,17 @@ public class Usuario {
     @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate dataNasc;
 
-    // 👇 A SUA IDEIA APLICADA: Voltamos com o tipo_usuario 👇
     @Column(name = "tipo_usuario", nullable = false)
     private String tipoUsuario;
 
     private String crp;
     private boolean disponivelEmergencia;
+
+    @Column(columnDefinition = "TEXT")
+    private String agendaHorarios;
+
+    // 👇 INJEÇÃO: Nova coluna para o preço da consulta 👇
+    private Double precoConsulta;
 
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PreferenciasNotificacao preferenciasNotificacao;
@@ -43,75 +48,37 @@ public class Usuario {
 
     // --- GETTERS E SETTERS ---
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
+    public Long getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
 
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+    public String getNomeUsuario() { return nomeUsuario; }
+    public void setNomeUsuario(String nomeUsuario) { this.nomeUsuario = nomeUsuario; }
 
-    public String getNomeUsuario() {
-        return nomeUsuario;
-    }
+    public String getEmailUsuario() { return emailUsuario; }
+    public void setEmailUsuario(String emailUsuario) { this.emailUsuario = emailUsuario; }
 
-    public void setNomeUsuario(String nomeUsuario) {
-        this.nomeUsuario = nomeUsuario;
-    }
+    public String getSenhaUsuario() { return senhaUsuario; }
+    public void setSenhaUsuario(String senhaUsuario) { this.senhaUsuario = senhaUsuario; }
 
-    public String getEmailUsuario() {
-        return emailUsuario;
-    }
+    public LocalDate getDataNasc() { return dataNasc; }
+    public void setDataNasc(LocalDate dataNasc) { this.dataNasc = dataNasc; }
 
-    public void setEmailUsuario(String emailUsuario) {
-        this.emailUsuario = emailUsuario;
-    }
+    public String getTipoUsuario() { return tipoUsuario; }
+    public void setTipoUsuario(String tipoUsuario) { this.tipoUsuario = tipoUsuario; }
 
-    public String getSenhaUsuario() {
-        return senhaUsuario;
-    }
+    public String getCrp() { return crp; }
+    public void setCrp(String crp) { this.crp = crp; }
 
-    public void setSenhaUsuario(String senhaUsuario) {
-        this.senhaUsuario = senhaUsuario;
-    }
+    public boolean isDisponivelEmergencia() { return disponivelEmergencia; }
+    public void setDisponivelEmergencia(boolean disponivelEmergencia) { this.disponivelEmergencia = disponivelEmergencia; }
 
-    public LocalDate getDataNasc() {
-        return dataNasc;
-    }
+    public String getAgendaHorarios() { return agendaHorarios; }
+    public void setAgendaHorarios(String agendaHorarios) { this.agendaHorarios = agendaHorarios; }
 
-    public void setDataNasc(LocalDate dataNasc) {
-        this.dataNasc = dataNasc;
-    }
+    // 👇 INJEÇÃO: Getters e Setters do Preço 👇
+    public Double getPrecoConsulta() { return precoConsulta; }
+    public void setPrecoConsulta(Double precoConsulta) { this.precoConsulta = precoConsulta; }
 
-    public String getTipoUsuario() {
-        return tipoUsuario;
-    }
-
-    public void setTipoUsuario(String tipoUsuario) {
-        this.tipoUsuario = tipoUsuario;
-    }
-
-    public String getCrp() {
-        return crp;
-    }
-
-    public void setCrp(String crp) {
-        this.crp = crp;
-    }
-
-    public boolean isDisponivelEmergencia() {
-        return disponivelEmergencia;
-    }
-
-    public void setDisponivelEmergencia(boolean disponivelEmergencia) {
-        this.disponivelEmergencia = disponivelEmergencia;
-    }
-
-    public PreferenciasNotificacao getPreferenciasNotificacao() {
-        return preferenciasNotificacao;
-    }
-
-    public void setPreferenciasNotificacao(PreferenciasNotificacao preferenciasNotificacao) {
-        this.preferenciasNotificacao = preferenciasNotificacao;
-    }
+    public PreferenciasNotificacao getPreferenciasNotificacao() { return preferenciasNotificacao; }
+    public void setPreferenciasNotificacao(PreferenciasNotificacao preferenciasNotificacao) { this.preferenciasNotificacao = preferenciasNotificacao; }
 }

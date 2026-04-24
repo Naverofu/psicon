@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "*") // 👇 A MÁGICA AQUI: Isso diz ao Navegador que ele pode confiar e exibir a mensagem de sucesso!
+@CrossOrigin(origins = "*")
 public class UsuarioController {
 
     @Autowired
@@ -16,25 +19,42 @@ public class UsuarioController {
 
     @PostMapping("/cadastrar")
     public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario) {
-        Usuario novoUsuario = usuarioService.cadastrarUsuario(usuario);
-        return ResponseEntity.ok(novoUsuario);
+        return ResponseEntity.ok(usuarioService.cadastrarUsuario(usuario));
     }
 
     @PostMapping("/login")
     public ResponseEntity<Usuario> login(@RequestBody Usuario usuario) {
-        Usuario usuarioAutenticado = usuarioService.autenticarUsuario(usuario.getEmailUsuario(), usuario.getSenhaUsuario());
-        return ResponseEntity.ok(usuarioAutenticado);
+        return ResponseEntity.ok(usuarioService.autenticarUsuario(usuario.getEmailUsuario(), usuario.getSenhaUsuario()));
     }
 
     @GetMapping("/emergencia/count")
     public ResponseEntity<Long> contarPsicologosEmergencia() {
-        long count = usuarioService.contarPsicologosParaEmergencia();
-        return ResponseEntity.ok(count);
+        return ResponseEntity.ok(usuarioService.contarPsicologosParaEmergencia());
     }
 
     @PostMapping("/{id}/emergencia/toggle")
     public ResponseEntity<Usuario> alternarEmergencia(@PathVariable Long id) {
-        Usuario usuarioAtualizado = usuarioService.alternarStatusEmergencia(id);
-        return ResponseEntity.ok(usuarioAtualizado);
+        return ResponseEntity.ok(usuarioService.alternarStatusEmergencia(id));
+    }
+
+    @PutMapping("/{id}/emergencia")
+    public ResponseEntity<Usuario> alterarStatusEmergencia(@PathVariable Long id, @RequestParam boolean disponivel) {
+        return ResponseEntity.ok(usuarioService.alterarStatusEmergencia(id, disponivel));
+    }
+
+    @GetMapping("/psicologos")
+    public ResponseEntity<List<Usuario>> listarPsicologos() {
+        return ResponseEntity.ok(usuarioService.listarPsicologos());
+    }
+
+    @PutMapping("/{id}/agenda")
+    public ResponseEntity<Usuario> atualizarAgenda(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        return ResponseEntity.ok(usuarioService.atualizarAgenda(id, payload.get("agendaHorarios")));
+    }
+
+    // 👇 INJEÇÃO: Rota para receber o preço do App 👇
+    @PutMapping("/{id}/preco")
+    public ResponseEntity<Usuario> atualizarPreco(@PathVariable Long id, @RequestParam Double preco) {
+        return ResponseEntity.ok(usuarioService.atualizarPrecoConsulta(id, preco));
     }
 }

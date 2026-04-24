@@ -1,22 +1,98 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  FlatList,
+  TextInput,
+  SafeAreaView,
+  ActivityIndicator
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function ProntuariosScreen({ navigation }) {
   const [busca, setBusca] = useState('');
 
-  // Simulando os pacientes baseados na sua classe Prontuario.java
-  const [prontuarios, setProntuarios] = useState([
-    { id: '1', paciente: 'Phil', ultimaSessao: '13/04/2026', status: 'Ativo' },
-    { id: '2', paciente: 'Maria Silva', ultimaSessao: '18/04/2026', status: 'Ativo' },
-    { id: '3', paciente: 'João Pedro', ultimaSessao: '01/03/2026', status: 'Alta' },
-  ]);
+  // Nossas variáveis agora começam vazias para receber os dados reais do Java
+  const [prontuarios, setProntuarios] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+
+  // 👇 INJEÇÃO: Busca as consultas do psicólogo e agrupa por paciente 👇
+  useEffect(() => {
+    const carregarPacientes = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('usuarioData');
+        if (jsonValue != null) {
+          const usuario = JSON.parse(jsonValue);
+
+          // Puxa o histórico de consultas deste psicólogo
+          const response = await api.get(`/consultas/psicologo/${usuario.idUsuario}`);
+          const todasConsultas = response.data;
+
+          // Mapa para agrupar as consultas por Paciente (para não aparecer o mesmo paciente repetido)
+          const pacientesMap = new Map();
+
+          todasConsultas.forEach(c => {
+            if (c.pacienteTitular) {
+              const nomePaciente = c.pacienteTitular.nomeUsuario;
+
+              // Formata a data da sessão
+              const dataObj = new Date(c.dataHoraConsulta);
+              const dia = String(dataObj.getDate()).padStart(2, '0');
+              const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+              const ano = dataObj.getFullYear();
+              const dataFormatada = `${dia}/${mes}/${ano}`;
+
+              // Se o paciente ainda não está na lista, adicionamos
+              // Salvamos o idConsulta para podermos buscar as anotações exatas na próxima tela
+              if (!pacientesMap.has(nomePaciente)) {
+                pacientesMap.set(nomePaciente, {
+                  id: c.pacienteTitular.idUsuario.toString(),
+                  consultaId: c.idConsulta, // Importante para o ProntuarioController do Java!
+                  paciente: nomePaciente,
+                  ultimaSessao: dataFormatada,
+                  status: 'Ativo' // Pode evoluir para pegar o status real do paciente no futuro
+                });
+              }
+            }
+          });
+
+          // Converte o Mapa de volta para um Array para o FlatList ler
+          setProntuarios(Array.from(pacientesMap.values()));
+        }
+      } catch (error) {
+        console.log("Erro ao buscar pacientes/prontuários:", error);
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    // Atualiza a lista sempre que a tela for aberta
+    const unsubscribe = navigation.addListener('focus', () => {
+      setCarregando(true);
+      carregarPacientes();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+  // 👆 FIM DA INJEÇÃO 👆
+
+  // Filtro inteligente para a barra de pesquisa
+  const prontuariosFiltrados = prontuarios.filter(p =>
+    p.paciente.toLowerCase().includes(busca.toLowerCase())
+  );
 
   const renderProntuario = ({ item }) => (
-    // AQUI ESTÁ A MUDANÇA: O evento onPress chama a tela de ProntuarioDetalhe
+    // Passamos o 'consultaId' e o nome na mochila (parâmetros) para a tela ProntuarioDetalhe
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('ProntuarioDetalhe')}
+      onPress={() => navigation.navigate('ProntuarioDetalhe', {
+        consultaId: item.consultaId,
+        pacienteNome: item.paciente
+      })}
     >
       <View style={styles.cardHeader}>
         <Text style={styles.pacienteNome}>{item.paciente}</Text>
@@ -54,13 +130,25 @@ export default function ProntuariosScreen({ navigation }) {
         />
       </View>
 
-      <FlatList
-        data={prontuarios}
-        keyExtractor={item => item.id}
-        renderItem={renderProntuario}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {carregando ? (
+        <View style={{ marginTop: 50, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#05F2F2" />
+          <Text style={{ marginTop: 15, color: '#A0A0A0' }}>Carregando seus pacientes...</Text>
+        </View>
+      ) : prontuariosFiltrados.length === 0 ? (
+        <View style={{ marginTop: 50, alignItems: 'center' }}>
+          <Ionicons name="folder-open-outline" size={60} color="#E0E0E0" />
+          <Text style={{ marginTop: 15, color: '#A0A0A0', fontSize: 16 }}>Nenhum paciente encontrado.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={prontuariosFiltrados}
+          keyExtractor={item => item.id}
+          renderItem={renderProntuario}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }

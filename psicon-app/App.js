@@ -86,7 +86,8 @@ function PsicologoTabs() {
       renderCircle={({ selectedTab, navigate }) => (
         <Animated.View style={[styles.btnCircleUp, { bottom: (Platform.OS === 'ios' ? 30 : -25) + insets.bottom }]}>
           <TouchableOpacity style={styles.button} onPress={() => navigate('PsicologoHome')}>
-            <Ionicons name="grid" color="#131826" size={28} />
+            {/* 👇 Aqui o ícone "grid" foi alterado para "home" 👇 */}
+            <Ionicons name="home" color="#131826" size={28} />
           </TouchableOpacity>
         </Animated.View>
       )}

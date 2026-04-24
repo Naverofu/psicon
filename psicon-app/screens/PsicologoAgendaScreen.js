@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,12 +6,20 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function PsicologoAgendaScreen({ navigation }) {
   const [diaSelecionado, setDiaSelecionado] = useState('Seg');
+
+  // Variáveis para a inteligência da API
+  const [idPsicologo, setIdPsicologo] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
 
   const diasSemana = [
     { id: 'Seg', nome: 'Segunda' },
@@ -21,14 +29,33 @@ export default function PsicologoAgendaScreen({ navigation }) {
     { id: 'Sex', nome: 'Sexta' },
   ];
 
-  // Estado simulando os horários que o psicólogo ativou/desativou
+  // Agora começa vazio e preenche com os dados do banco!
   const [horariosAtivos, setHorariosAtivos] = useState({
-    'Seg': ['09:00', '10:00', '14:00', '15:00', '16:00'],
-    'Ter': ['14:00', '15:00', '16:00', '17:00'],
-    'Qua': ['08:00', '09:00', '10:00'],
-    'Qui': ['13:00', '14:00', '15:00', '18:00'],
-    'Sex': ['09:00', '10:00', '11:00'],
+    'Seg': [], 'Ter': [], 'Qua': [], 'Qui': [], 'Sex': []
   });
+
+  // Busca os dados no cofre ao abrir o ecrã
+  useEffect(() => {
+    const carregarAgenda = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('usuarioData');
+        if (jsonValue != null) {
+          const usuario = JSON.parse(jsonValue);
+          setIdPsicologo(usuario.idUsuario);
+
+          // Se o psicólogo já salvou uma agenda antes, carrega os horários ativos
+          if (usuario.agendaHorarios) {
+            setHorariosAtivos(JSON.parse(usuario.agendaHorarios));
+          }
+        }
+      } catch (error) {
+        console.log("Erro ao carregar a agenda:", error);
+      } finally {
+        setCarregando(false);
+      }
+    };
+    carregarAgenda();
+  }, []);
 
   const todosOsHorarios = [
     '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -39,13 +66,11 @@ export default function PsicologoAgendaScreen({ navigation }) {
     const horariosDoDia = horariosAtivos[diaSelecionado] || [];
 
     if (horariosDoDia.includes(horario)) {
-      // Se já está ativo, remove
       setHorariosAtivos({
         ...horariosAtivos,
         [diaSelecionado]: horariosDoDia.filter(h => h !== horario)
       });
     } else {
-      // Se não está ativo, adiciona e ordena
       setHorariosAtivos({
         ...horariosAtivos,
         [diaSelecionado]: [...horariosDoDia, horario].sort()
@@ -53,23 +78,47 @@ export default function PsicologoAgendaScreen({ navigation }) {
     }
   };
 
-  const salvarAgenda = () => {
-    Alert.alert(
-      "Agenda Atualizada",
-      "Seus horários de atendimento foram salvos com sucesso. Os pacientes já podem agendar nestes horários."
-    );
+  // Salva a agenda real no Spring Boot
+  const salvarAgenda = async () => {
+    if (!idPsicologo) return;
+    setSalvando(true);
+
+    try {
+      // Transforma o grid num texto JSON para viajar para o Java
+      const agendaString = JSON.stringify(horariosAtivos);
+
+      await api.put(`/usuarios/${idPsicologo}/agenda`, { agendaHorarios: agendaString });
+
+      // Atualiza o cofre do telemóvel para ele não esquecer a nova agenda
+      const jsonValue = await AsyncStorage.getItem('usuarioData');
+      if (jsonValue != null) {
+        let usuario = JSON.parse(jsonValue);
+        usuario.agendaHorarios = agendaString;
+        await AsyncStorage.setItem('usuarioData', JSON.stringify(usuario));
+      }
+
+      Alert.alert("Agenda Atualizada", "Os seus horários de atendimento foram salvos com sucesso no servidor.");
+    } catch (error) {
+      console.log("Erro ao salvar agenda:", error);
+      Alert.alert("Erro de Conexão", "Não foi possível salvar a agenda no servidor.");
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Meus Horários</Text>
-        <TouchableOpacity style={styles.saveHeaderButton} onPress={salvarAgenda}>
-          <Text style={styles.saveHeaderText}>Salvar</Text>
+        <TouchableOpacity style={styles.saveHeaderButton} onPress={salvarAgenda} disabled={salvando}>
+          {salvando ? (
+            <ActivityIndicator size="small" color="#131826" />
+          ) : (
+            <Text style={styles.saveHeaderText}>Salvar</Text>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Seletor de Dias da Semana */}
       <View style={styles.diasContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
           {diasSemana.map((dia) => (
@@ -95,30 +144,34 @@ export default function PsicologoAgendaScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* Grid de Horários */}
         <Text style={styles.sectionTitle}>Horários de Atendimento</Text>
-        <View style={styles.gridContainer}>
-          {todosOsHorarios.map((horario) => {
-            const isAtivo = (horariosAtivos[diaSelecionado] || []).includes(horario);
-            return (
-              <TouchableOpacity
-                key={horario}
-                style={[styles.horarioCard, isAtivo && styles.horarioCardActive]}
-                onPress={() => toggleHorario(horario)}
-              >
-                <Ionicons
-                  name={isAtivo ? "checkmark-circle" : "ellipse-outline"}
-                  size={18}
-                  color={isAtivo ? "#168C04" : "#A0A0A0"}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[styles.horarioText, isAtivo && styles.horarioTextActive]}>
-                  {horario}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+
+        {carregando ? (
+           <ActivityIndicator size="large" color="#05F2F2" style={{ marginTop: 30 }} />
+        ) : (
+          <View style={styles.gridContainer}>
+            {todosOsHorarios.map((horario) => {
+              const isAtivo = (horariosAtivos[diaSelecionado] || []).includes(horario);
+              return (
+                <TouchableOpacity
+                  key={horario}
+                  style={[styles.horarioCard, isAtivo && styles.horarioCardActive]}
+                  onPress={() => toggleHorario(horario)}
+                >
+                  <Ionicons
+                    name={isAtivo ? "checkmark-circle" : "ellipse-outline"}
+                    size={18}
+                    color={isAtivo ? "#168C04" : "#A0A0A0"}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={[styles.horarioText, isAtivo && styles.horarioTextActive]}>
+                    {horario}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -129,7 +182,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 30, backgroundColor: '#FFF', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#131826' },
-  saveHeaderButton: { backgroundColor: '#05F2F2', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12 },
+  saveHeaderButton: { backgroundColor: '#05F2F2', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, minWidth: 70, alignItems: 'center' },
   saveHeaderText: { color: '#131826', fontWeight: 'bold', fontSize: 14 },
   diasContainer: { backgroundColor: '#FFF', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   diaButton: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F5F5F5', marginRight: 10 },

@@ -1,25 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function ConsultasScreen({ navigation }) {
   const [abaAtiva, setAbaAtiva] = useState('Proximas');
 
-  const consultasPendentes = [
-    { id: '1', data: 'Hoje, 20/04', hora: '14:00 - 15:00', psicologo: 'Dra. Ana Souza', status: 'Confirmada', tipo: 'Online' }
-  ];
+  // Nossas variáveis agora começam vazias para receber os dados reais do Java
+  const [consultasPendentes, setConsultasPendentes] = useState([]);
+  const [consultasHistorico, setConsultasHistorico] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
-  const consultasHistorico = [
-    { id: '2', data: '13/04/2026', hora: '14:00 - 15:00', psicologo: 'Dra. Ana Souza', status: 'Realizada', tipo: 'Online' },
-    { id: '3', data: '06/04/2026', hora: '14:00 - 15:00', psicologo: 'Dra. Ana Souza', status: 'Realizada', tipo: 'Online' }
-  ];
+  // 👇 INJEÇÃO: Busca as consultas do paciente no banco de dados 👇
+  useEffect(() => {
+    const carregarConsultas = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('usuarioData');
+        if (jsonValue != null) {
+          const usuario = JSON.parse(jsonValue);
+
+          // Chama a rota do Spring Boot que lista as consultas do paciente
+          const response = await api.get(`/consultas/paciente/${usuario.idUsuario}`);
+          const todasConsultas = response.data;
+
+          const pendentes = [];
+          const historico = [];
+
+          todasConsultas.forEach(c => {
+            // Formatação da data (Ex: 2026-05-10T14:30:00 -> 10/05/2026)
+            const dataObj = new Date(c.dataHoraConsulta);
+            const dia = String(dataObj.getDate()).padStart(2, '0');
+            const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+            const ano = dataObj.getFullYear();
+
+            const horaStr = String(dataObj.getHours()).padStart(2, '0');
+            const minutoStr = String(dataObj.getMinutes()).padStart(2, '0');
+            // Simula o fim da sessão (1 hora depois)
+            const horaFimStr = String(dataObj.getHours() + 1).padStart(2, '0');
+
+            const consultaFormatada = {
+              id: c.idConsulta ? c.idConsulta.toString() : Math.random().toString(),
+              data: `${dia}/${mes}/${ano}`,
+              hora: `${horaStr}:${minutoStr} - ${horaFimStr}:${minutoStr}`,
+              psicologo: c.psicologo ? c.psicologo.nomeUsuario : 'Psicólogo',
+              status: c.statusConsulta === 'AGENDADA' ? 'Confirmada' : c.statusConsulta,
+              tipo: c.tipoConsulta === 'NORMAL' ? 'Online' : 'Emergência'
+            };
+
+            // Separa nas abas corretas dependendo do status vindo do banco
+            if (c.statusConsulta === 'AGENDADA' || c.statusConsulta === 'EM_ANDAMENTO') {
+              pendentes.push(consultaFormatada);
+            } else {
+              historico.push(consultaFormatada);
+            }
+          });
+
+          setConsultasPendentes(pendentes);
+          setConsultasHistorico(historico);
+        }
+      } catch (error) {
+        console.log("Erro ao buscar consultas:", error);
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    // Ouve sempre que a tela ganha foco para recarregar a lista (caso o usuário tenha acabado de agendar uma)
+    const unsubscribe = navigation.addListener('focus', () => {
+      setCarregando(true);
+      carregarConsultas();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+  // 👆 FIM DA INJEÇÃO 👆
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -44,31 +107,45 @@ export default function ConsultasScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
 
-        {abaAtiva === 'Proximas' ? (
-          consultasPendentes.map((consulta) => (
-            <View key={consulta.id} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>{consulta.status}</Text>
-                </View>
-                <Text style={styles.tipoText}>{consulta.tipo}</Text>
-              </View>
-              <Text style={styles.psicologoName}>{consulta.psicologo}</Text>
-              <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={16} color="#A0A0A0" />
-                <Text style={styles.infoText}>{consulta.data}</Text>
-                <Ionicons name="time-outline" size={16} color="#A0A0A0" style={{ marginLeft: 15 }} />
-                <Text style={styles.infoText}>{consulta.hora}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.joinButton}
-                onPress={() => navigation.navigate('Chat')}
-              >
-                <Ionicons name="videocam" size={18} color="#131826" style={{ marginRight: 8 }} />
-                <Text style={styles.joinButtonText}>Entrar na Sala</Text>
-              </TouchableOpacity>
+        {carregando ? (
+          <View style={{ marginTop: 50, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#05F2F2" />
+            <Text style={{ marginTop: 15, color: '#A0A0A0' }}>Buscando sua agenda no servidor...</Text>
+          </View>
+        ) : abaAtiva === 'Proximas' ? (
+
+          consultasPendentes.length === 0 ? (
+            <View style={{ marginTop: 40, alignItems: 'center' }}>
+              <Ionicons name="calendar-clear-outline" size={60} color="#E0E0E0" />
+              <Text style={{ marginTop: 15, color: '#A0A0A0', fontSize: 16 }}>Nenhuma consulta agendada.</Text>
             </View>
-          ))
+          ) : (
+            consultasPendentes.map((consulta) => (
+              <View key={consulta.id} style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusText}>{consulta.status}</Text>
+                  </View>
+                  <Text style={styles.tipoText}>{consulta.tipo}</Text>
+                </View>
+                <Text style={styles.psicologoName}>{consulta.psicologo}</Text>
+                <View style={styles.infoRow}>
+                  <Ionicons name="calendar-outline" size={16} color="#A0A0A0" />
+                  <Text style={styles.infoText}>{consulta.data}</Text>
+                  <Ionicons name="time-outline" size={16} color="#A0A0A0" style={{ marginLeft: 15 }} />
+                  <Text style={styles.infoText}>{consulta.hora}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.joinButton}
+                  onPress={() => navigation.navigate('Chat')}
+                >
+                  <Ionicons name="videocam" size={18} color="#131826" style={{ marginRight: 8 }} />
+                  <Text style={styles.joinButtonText}>Entrar na Sala</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )
+
         ) : (
           <View>
             {/* NOVO BOTÃO DE ACESSO RÁPIDO AOS PAGAMENTOS! */}
@@ -87,22 +164,27 @@ export default function ConsultasScreen({ navigation }) {
             </TouchableOpacity>
 
             <Text style={styles.sectionTitle}>Sessões Passadas</Text>
-            {consultasHistorico.map((consulta) => (
-              <View key={consulta.id} style={[styles.card, { opacity: 0.8 }]}>
-                <View style={styles.cardHeader}>
-                  <View style={[styles.statusBadge, { backgroundColor: '#E0E0E0' }]}>
-                    <Text style={[styles.statusText, { color: '#666' }]}>{consulta.status}</Text>
+
+            {consultasHistorico.length === 0 ? (
+              <Text style={{ color: '#A0A0A0', marginTop: 10 }}>Não há histórico de consultas.</Text>
+            ) : (
+              consultasHistorico.map((consulta) => (
+                <View key={consulta.id} style={[styles.card, { opacity: 0.8 }]}>
+                  <View style={styles.cardHeader}>
+                    <View style={[styles.statusBadge, { backgroundColor: '#E0E0E0' }]}>
+                      <Text style={[styles.statusText, { color: '#666' }]}>{consulta.status}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.psicologoName}>{consulta.psicologo}</Text>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="calendar-outline" size={16} color="#A0A0A0" />
+                    <Text style={styles.infoText}>{consulta.data}</Text>
+                    <Ionicons name="time-outline" size={16} color="#A0A0A0" style={{ marginLeft: 15 }} />
+                    <Text style={styles.infoText}>{consulta.hora}</Text>
                   </View>
                 </View>
-                <Text style={styles.psicologoName}>{consulta.psicologo}</Text>
-                <View style={styles.infoRow}>
-                  <Ionicons name="calendar-outline" size={16} color="#A0A0A0" />
-                  <Text style={styles.infoText}>{consulta.data}</Text>
-                  <Ionicons name="time-outline" size={16} color="#A0A0A0" style={{ marginLeft: 15 }} />
-                  <Text style={styles.infoText}>{consulta.hora}</Text>
-                </View>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         )}
       </ScrollView>
