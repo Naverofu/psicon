@@ -52,9 +52,14 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.atualizarAgenda(id, payload.get("agendaHorarios")));
     }
 
-    // 👇 INJEÇÃO: Rota para receber o preço do App 👇
     @PutMapping("/{id}/preco")
     public ResponseEntity<Usuario> atualizarPreco(@PathVariable Long id, @RequestParam Double preco) {
         return ResponseEntity.ok(usuarioService.atualizarPrecoConsulta(id, preco));
+    }
+
+    @PutMapping("/{id}/foto")
+    public ResponseEntity<Usuario> atualizarFoto(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        String fotoBase64 = payload.get("fotoPerfil");
+        return ResponseEntity.ok(usuarioService.atualizarFotoPerfil(id, fotoBase64));
     }
 }

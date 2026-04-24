@@ -27,8 +27,11 @@ public class Usuario {
     @Column(columnDefinition = "TEXT")
     private String agendaHorarios;
 
-    // 👇 INJEÇÃO: Nova coluna para o preço da consulta 👇
     private Double precoConsulta;
+
+    // AQUI ESTÁ O SÍMBOLO QUE O JAVA ESTAVA A PROCURAR
+    @Column(columnDefinition = "TEXT")
+    private String fotoPerfil;
 
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PreferenciasNotificacao preferenciasNotificacao;
@@ -75,9 +78,12 @@ public class Usuario {
     public String getAgendaHorarios() { return agendaHorarios; }
     public void setAgendaHorarios(String agendaHorarios) { this.agendaHorarios = agendaHorarios; }
 
-    // 👇 INJEÇÃO: Getters e Setters do Preço 👇
     public Double getPrecoConsulta() { return precoConsulta; }
     public void setPrecoConsulta(Double precoConsulta) { this.precoConsulta = precoConsulta; }
+
+    // AS FUNÇÕES DA FOTO (Se isto faltar, dá erro cannot find symbol)
+    public String getFotoPerfil() { return fotoPerfil; }
+    public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
 
     public PreferenciasNotificacao getPreferenciasNotificacao() { return preferenciasNotificacao; }
     public void setPreferenciasNotificacao(PreferenciasNotificacao preferenciasNotificacao) { this.preferenciasNotificacao = preferenciasNotificacao; }

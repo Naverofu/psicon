@@ -21,7 +21,6 @@ public class UsuarioService {
         if (existente.isPresent()) {
             throw new RuntimeException("Este e-mail já está em uso no sistema.");
         }
-
         PreferenciasNotificacao preferenciasPadrao = new PreferenciasNotificacao(novoUsuario);
         novoUsuario.setPreferenciasNotificacao(preferenciasPadrao);
         return usuarioRepository.save(novoUsuario);
@@ -42,45 +41,37 @@ public class UsuarioService {
     }
 
     public Usuario alternarStatusEmergencia(Long id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
-
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
         usuario.setDisponivelEmergencia(!usuario.isDisponivelEmergencia());
         return usuarioRepository.save(usuario);
     }
 
     public Usuario alterarStatusEmergencia(Long id, boolean disponivel) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
-
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
         usuario.setDisponivelEmergencia(disponivel);
         return usuarioRepository.save(usuario);
     }
 
     public List<Usuario> listarPsicologos() {
-        return usuarioRepository.findAll().stream()
-                .filter(u -> "PSICOLOGO".equals(u.getTipoUsuario()))
-                .collect(Collectors.toList());
+        return usuarioRepository.findAll().stream().filter(u -> "PSICOLOGO".equals(u.getTipoUsuario())).collect(Collectors.toList());
     }
 
     public Usuario atualizarAgenda(Long id, String agendaJson) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
-
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
         usuario.setAgendaHorarios(agendaJson);
         return usuarioRepository.save(usuario);
     }
 
-    // 👇 INJEÇÃO: Salva o novo preço do psicólogo 👇
     public Usuario atualizarPrecoConsulta(Long id, Double preco) {
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+        usuario.setPrecoConsulta(preco);
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuario atualizarFotoPerfil(Long id, String fotoBase64) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
-
-        if (!"PSICOLOGO".equals(usuario.getTipoUsuario())) {
-            throw new RuntimeException("Apenas psicólogos podem ter preço de consulta.");
-        }
-
-        usuario.setPrecoConsulta(preco);
+        usuario.setFotoPerfil(fotoBase64); // Agora o Java vai encontrar isto porque atualizamos o Usuario.java
         return usuarioRepository.save(usuario);
     }
 }

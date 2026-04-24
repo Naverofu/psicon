@@ -9,12 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert
+  Alert,
+  ActivityIndicator // Injetado para mostrar carregamento
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
-// 👇 Biblioteca de memória adicionada aqui 👇
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen({ navigation }) {
@@ -22,25 +22,30 @@ export default function LoginScreen({ navigation }) {
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
+  // 👇 INJEÇÃO: Controle de estado de carregamento 👇
+  const [carregando, setCarregando] = useState(false);
+
   const handleLogin = async () => {
     if (email.trim() === '' || senha.trim() === '') {
-      Alert.alert('Atenção', 'Por favor, preencha seu e-mail e senha.');
+      Alert.alert('Atenção', 'Por favor, preencha o seu e-mail e senha.');
       return;
     }
 
+    setCarregando(true); // Inicia o carregamento
+
     try {
       const payloadLogin = {
-        emailUsuario: email,
+        emailUsuario: email.trim(),
         senhaUsuario: senha
       };
 
       const response = await api.post('/usuarios/login', payloadLogin);
       const usuarioLogado = response.data;
 
-      // 👇 A MÁGICA: Guardamos todos os dados do usuário no telemóvel 👇
+      // Guardamos todos os dados do usuário no telemóvel
       await AsyncStorage.setItem('usuarioData', JSON.stringify(usuarioLogado));
 
-      // REDIRECIONAMENTO:
+      // REDIRECIONAMENTO INTELIGENTE:
       if (usuarioLogado.tipoUsuario === "PSICOLOGO" ||
           usuarioLogado.emailUsuario.toLowerCase().includes('psi') ||
           usuarioLogado.emailUsuario.toLowerCase().includes('dra')) {
@@ -55,9 +60,28 @@ export default function LoginScreen({ navigation }) {
       } else if (error.response && error.response.status === 500) {
         Alert.alert('Erro', error.response.data.message || 'E-mail não encontrado ou senha incorreta.');
       } else {
-        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. O Spring Boot está rodando?');
+        Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique a sua internet e se o sistema está online.');
       }
+    } finally {
+      setCarregando(false); // Para o carregamento independentemente do resultado
     }
+  };
+
+  // 👇 INJEÇÃO: Lógica para Recuperar a Senha 👇
+  const handleEsqueciSenha = () => {
+    if (email.trim() === '') {
+      Alert.alert(
+        'Recuperação de Senha',
+        'Por favor, digite o seu e-mail no campo acima para enviarmos o link de recuperação.'
+      );
+      return;
+    }
+
+    // Como é um TCC, simulamos o envio com sucesso para o e-mail digitado
+    Alert.alert(
+      'E-mail Enviado!',
+      `Enviámos as instruções de recuperação de senha para: \n\n${email}\n\nVerifique a sua caixa de entrada e pasta de spam.`
+    );
   };
 
   return (
@@ -90,6 +114,7 @@ export default function LoginScreen({ navigation }) {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
+                editable={!carregando} // Impede edição enquanto carrega
               />
             </View>
 
@@ -102,19 +127,32 @@ export default function LoginScreen({ navigation }) {
                 secureTextEntry={!mostrarSenha}
                 value={senha}
                 onChangeText={setSenha}
+                editable={!carregando} // Impede edição enquanto carrega
               />
               <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={styles.eyeIcon}>
                 <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={22} color="#A0A0A0" />
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotPasswordButton}>
+            {/* 👇 Botão agora possui ação onPress 👇 */}
+            <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleEsqueciSenha}>
               <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.buttonPrimary} onPress={handleLogin}>
-              <Text style={styles.buttonPrimaryText}>Entrar</Text>
-              <Ionicons name="log-in-outline" size={22} color="#131826" style={{ marginLeft: 8 }} />
+            <TouchableOpacity
+              style={[styles.buttonPrimary, carregando && { opacity: 0.7 }]}
+              onPress={handleLogin}
+              disabled={carregando}
+            >
+              {/* 👇 Renderiza o spinner ou o texto dependendo do estado 👇 */}
+              {carregando ? (
+                <ActivityIndicator size="small" color="#131826" />
+              ) : (
+                <>
+                  <Text style={styles.buttonPrimaryText}>Entrar</Text>
+                  <Ionicons name="log-in-outline" size={22} color="#131826" style={{ marginLeft: 8 }} />
+                </>
+              )}
             </TouchableOpacity>
 
             <View style={styles.separatorContainer}>
@@ -126,6 +164,7 @@ export default function LoginScreen({ navigation }) {
             <TouchableOpacity
               style={styles.buttonSecondary}
               onPress={() => navigation.navigate('Cadastro')}
+              disabled={carregando}
             >
               <Text style={styles.buttonSecondaryText}>Novo por aqui? Criar Conta</Text>
             </TouchableOpacity>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import api from '../services/api';
 
 export default function PerfilScreen({ navigation }) {
@@ -10,7 +11,7 @@ export default function PerfilScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [isPsicologo, setIsPsicologo] = useState(false);
-  const [precoConsulta, setPrecoConsulta] = useState('150.00'); // Preço padrão
+  const [precoConsulta, setPrecoConsulta] = useState('150.00');
 
   const [possuiDependente, setPossuiDependente] = useState(false);
   const [nomeDependente, setNomeDependente] = useState('');
@@ -18,6 +19,9 @@ export default function PerfilScreen({ navigation }) {
 
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+
+  const [fotoPerfil, setFotoPerfil] = useState(null);
+  const [salvandoFoto, setSalvandoFoto] = useState(false);
 
   useEffect(() => {
     const carregarDadosPerfil = async () => {
@@ -30,15 +34,14 @@ export default function PerfilScreen({ navigation }) {
           setNome(usuario.nomeUsuario || '');
           setEmail(usuario.emailUsuario || '');
           setDataNascimento(usuario.dataNasc || '');
+          setFotoPerfil(usuario.fotoPerfil || null);
 
-          // Verifica se é psicólogo e preenche o preço
           if (usuario.tipoUsuario === 'PSICOLOGO') {
             setIsPsicologo(true);
             if (usuario.precoConsulta) {
               setPrecoConsulta(usuario.precoConsulta.toString());
             }
           } else {
-            // Se for paciente, busca dependentes
             try {
               const respostaDependentes = await api.get(`/dependentes/titular/${usuario.idUsuario}`);
               if (respostaDependentes.data && respostaDependentes.data.length > 0) {
@@ -60,10 +63,65 @@ export default function PerfilScreen({ navigation }) {
     carregarDadosPerfil();
   }, []);
 
+  const gerenciarFoto = () => {
+    Alert.alert(
+      "Foto de Perfil",
+      "O que deseja fazer?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Remover Foto", onPress: () => atualizarFotoNoBanco(null), style: "destructive" },
+        { text: "Escolher da Galeria", onPress: abrirGaleria }
+      ]
+    );
+  };
+
+  const abrirGaleria = async () => {
+    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissao.status !== 'granted') {
+      Alert.alert("Permissão negada", "Precisamos de acesso à sua galeria para alterar a foto.");
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.3,
+      base64: true
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      const imagemBase64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      atualizarFotoNoBanco(imagemBase64);
+    }
+  };
+
+  const atualizarFotoNoBanco = async (imagemBase64) => {
+    if (!idUsuario) return;
+    setSalvandoFoto(true);
+
+    try {
+      await api.put(`/usuarios/${idUsuario}/foto`, { fotoPerfil: imagemBase64 });
+      setFotoPerfil(imagemBase64);
+
+      const jsonValue = await AsyncStorage.getItem('usuarioData');
+      if (jsonValue != null) {
+          let usuario = JSON.parse(jsonValue);
+          usuario.fotoPerfil = imagemBase64;
+          await AsyncStorage.setItem('usuarioData', JSON.stringify(usuario));
+      }
+
+    } catch (error) {
+      console.log("Erro ao salvar foto", error);
+      Alert.alert("Erro", "Não foi possível atualizar a foto de perfil.");
+    } finally {
+      setSalvandoFoto(false);
+    }
+  };
+
   const handleSalvar = async () => {
     setSalvando(true);
     try {
-      // Se for psicólogo, envia o novo preço para a API
       if (isPsicologo && idUsuario) {
         const precoNumerico = parseFloat(precoConsulta.replace(',', '.'));
         if (isNaN(precoNumerico)) {
@@ -74,7 +132,6 @@ export default function PerfilScreen({ navigation }) {
 
         await api.put(`/usuarios/${idUsuario}/preco?preco=${precoNumerico}`);
 
-        // Atualiza no cofre
         const jsonValue = await AsyncStorage.getItem('usuarioData');
         if (jsonValue != null) {
             let usuario = JSON.parse(jsonValue);
@@ -86,7 +143,6 @@ export default function PerfilScreen({ navigation }) {
       setEditando(false);
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
     } catch (error) {
-      console.log("Erro ao salvar:", error);
       Alert.alert("Erro", "Não foi possível salvar as alterações.");
     } finally {
       setSalvando(false);
@@ -96,9 +152,7 @@ export default function PerfilScreen({ navigation }) {
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('usuarioData');
-    } catch(e) {
-      console.log("Erro ao limpar dados de sessão", e);
-    }
+    } catch(e) {}
     navigation.replace('Login');
   };
 
@@ -117,9 +171,20 @@ export default function PerfilScreen({ navigation }) {
         </View>
 
         <View style={styles.profileImageContainer}>
-          <View style={styles.profileImage}>
-            <Ionicons name="person" size={50} color="#FFF" />
-          </View>
+          <TouchableOpacity onPress={gerenciarFoto} disabled={salvandoFoto}>
+            <View style={styles.profileImageWrapper}>
+              {salvandoFoto ? (
+                <ActivityIndicator size="large" color="#05F2F2" />
+              ) : fotoPerfil ? (
+                <Image source={{ uri: fotoPerfil }} style={styles.profileImage} />
+              ) : (
+                <Ionicons name="person" size={50} color="#FFF" />
+              )}
+              <View style={styles.cameraIconBadge}>
+                <Ionicons name="camera" size={16} color="#FFF" />
+              </View>
+            </View>
+          </TouchableOpacity>
           <Text style={styles.profileName}>{nome}</Text>
           <Text style={styles.profileEmail}>{email}</Text>
         </View>
@@ -153,7 +218,6 @@ export default function PerfilScreen({ navigation }) {
           </View>
         </View>
 
-        {/* 👇 INJEÇÃO: Seção Profissional (Apenas para Psicólogos) 👇 */}
         {isPsicologo && (
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Configurações Profissionais</Text>
@@ -235,7 +299,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#131826' },
   editButton: { padding: 8, backgroundColor: '#131826', borderRadius: 12, elevation: 2 },
   profileImageContainer: { alignItems: 'center', marginTop: 20, marginBottom: 30 },
-  profileImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#2A3143', justifyContent: 'center', alignItems: 'center', marginBottom: 15, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 5 },
+  profileImageWrapper: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#2A3143', justifyContent: 'center', alignItems: 'center', marginBottom: 15, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 5 },
+  profileImage: { width: 100, height: 100, borderRadius: 50 },
+  cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#05F2F2', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
   profileName: { fontSize: 22, fontWeight: 'bold', color: '#131826' },
   profileEmail: { fontSize: 14, color: '#A0A0A0', marginTop: 4 },
   sectionContainer: { paddingHorizontal: 20, marginBottom: 25 },

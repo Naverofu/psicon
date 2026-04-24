@@ -6,7 +6,8 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.4</version>
-        <relativePath/> </parent>
+        <relativePath/>
+    </parent>
     <groupId>com.psicon</groupId>
     <artifactId>psicon</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -51,6 +52,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.psicon.PsiconApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
