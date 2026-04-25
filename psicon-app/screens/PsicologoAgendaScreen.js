@@ -147,7 +147,7 @@ export default function PsicologoAgendaScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Horários de Atendimento</Text>
 
         {carregando ? (
-           <ActivityIndicator size="large" color="#05F2F2" style={{ marginTop: 30 }} />
+           <ActivityIndicator size="large" color="#BECFBB" style={{ marginTop: 30 }} />
         ) : (
           <View style={styles.gridContainer}>
             {todosOsHorarios.map((horario) => {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 30, backgroundColor: '#FFF', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#131826' },
-  saveHeaderButton: { backgroundColor: '#05F2F2', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, minWidth: 70, alignItems: 'center' },
+  saveHeaderButton: { backgroundColor: '#BECFBB', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, minWidth: 70, alignItems: 'center' },
   saveHeaderText: { color: '#131826', fontWeight: 'bold', fontSize: 14 },
   diasContainer: { backgroundColor: '#FFF', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   diaButton: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F5F5F5', marginRight: 10 },

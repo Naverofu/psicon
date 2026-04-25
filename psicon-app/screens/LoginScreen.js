@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   eyeIcon: { padding: 5 },
   forgotPasswordButton: { alignSelf: 'flex-end', marginBottom: 25 },
   forgotPasswordText: { color: '#A0A0A0', fontSize: 14, fontWeight: '600' },
-  buttonPrimary: { backgroundColor: '#05F2F2', flexDirection: 'row', justifyContent: 'center', paddingVertical: 15, borderRadius: 15, alignItems: 'center', width: '100%', shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 5 },
+  buttonPrimary: { backgroundColor: '#BECFBB', flexDirection: 'row', justifyContent: 'center', paddingVertical: 15, borderRadius: 15, alignItems: 'center', width: '100%', shadowColor: '#BECFBB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 5 },
   buttonPrimaryText: { color: '#131826', fontSize: 18, fontWeight: 'bold' },
   separatorContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
   separatorLine: { flex: 1, height: 1, backgroundColor: '#E0E0E0' },

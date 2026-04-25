@@ -166,7 +166,7 @@ export default function PerfilScreen({ navigation }) {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Meu Perfil</Text>
           <TouchableOpacity onPress={() => setEditando(!editando)} style={styles.editButton}>
-            <Ionicons name={editando ? "close" : "pencil"} size={22} color="#05F2F2" />
+            <Ionicons name={editando ? "close" : "pencil"} size={22} color="#BECFBB" />
           </TouchableOpacity>
         </View>
 
@@ -174,7 +174,7 @@ export default function PerfilScreen({ navigation }) {
           <TouchableOpacity onPress={gerenciarFoto} disabled={salvandoFoto}>
             <View style={styles.profileImageWrapper}>
               {salvandoFoto ? (
-                <ActivityIndicator size="large" color="#05F2F2" />
+                <ActivityIndicator size="large" color="#BECFBB" />
               ) : fotoPerfil ? (
                 <Image source={{ uri: fotoPerfil }} style={styles.profileImage} />
               ) : (
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   profileImageContainer: { alignItems: 'center', marginTop: 20, marginBottom: 30 },
   profileImageWrapper: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#2A3143', justifyContent: 'center', alignItems: 'center', marginBottom: 15, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 5 },
   profileImage: { width: 100, height: 100, borderRadius: 50 },
-  cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#05F2F2', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+  cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#BECFBB', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
   profileName: { fontSize: 22, fontWeight: 'bold', color: '#131826' },
   profileEmail: { fontSize: 14, color: '#A0A0A0', marginTop: 4 },
   sectionContainer: { paddingHorizontal: 20, marginBottom: 25 },
@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
   infoTextContainer: { flex: 1 },
   infoLabel: { fontSize: 12, color: '#A0A0A0', marginBottom: 4 },
   infoValue: { fontSize: 15, color: '#131826', fontWeight: '500' },
-  inputEdit: { fontSize: 15, color: '#131826', fontWeight: '500', borderBottomWidth: 1, borderBottomColor: '#05F2F2', paddingVertical: 0, marginTop: 2 },
+  inputEdit: { fontSize: 15, color: '#131826', fontWeight: '500', borderBottomWidth: 1, borderBottomColor: '#BECFBB', paddingVertical: 0, marginTop: 2 },
   divider: { height: 1, backgroundColor: '#F0F0F0', marginLeft: 40 },
-  saveButton: { backgroundColor: '#05F2F2', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 15, borderRadius: 15, marginHorizontal: 20, marginTop: 10, elevation: 3 },
+  saveButton: { backgroundColor: '#BECFBB', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 15, borderRadius: 15, marginHorizontal: 20, marginTop: 10, elevation: 3 },
   saveButtonText: { color: '#131826', fontSize: 16, fontWeight: 'bold' },
   actionContainer: { paddingHorizontal: 20, marginTop: 10 },
   actionButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 18, borderRadius: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },

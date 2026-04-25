@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   faturaTitulo: { fontSize: 16, fontWeight: 'bold', color: '#131826' },
   faturaData: { fontSize: 13, color: '#E53935', marginTop: 4, fontWeight: '500' },
   faturaValor: { fontSize: 20, fontWeight: 'bold', color: '#131826' },
-  payButton: { backgroundColor: '#05F2F2', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 12, borderRadius: 12 },
+  payButton: { backgroundColor: '#BECFBB', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 12, borderRadius: 12 },
   payButtonText: { color: '#131826', fontSize: 16, fontWeight: 'bold', marginRight: 8 },
   historicoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
   historicoIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center', marginRight: 15 },

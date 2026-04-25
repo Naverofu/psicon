@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   buttonPrimary: {
-    backgroundColor: '#05F2F2',
+    backgroundColor: '#BECFBB',
     flexDirection: 'row',
     justifyContent: 'center',
     paddingVertical: 15,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginTop: 10,
-    shadowColor: '#05F2F2',
+    shadowColor: '#BECFBB',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,

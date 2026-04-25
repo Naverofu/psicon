@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   warningContainer: { alignItems: 'center', backgroundColor: '#FFEBEE', padding: 20, borderRadius: 20, marginTop: 10, marginBottom: 25 },
   warningTitle: { fontSize: 20, fontWeight: 'bold', color: '#B3261E', marginBottom: 5 },
   warningText: { fontSize: 14, color: '#D32F2F', textAlign: 'center', lineHeight: 20 },
-  plantaoCard: { backgroundColor: '#05F2F2', borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', elevation: 4, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, marginBottom: 25 },
+  plantaoCard: { backgroundColor: '#BECFBB', borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', elevation: 4, shadowColor: '#BECFBB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, marginBottom: 25 },
   plantaoIconContainer: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   plantaoTextContainer: { flex: 1 },
   plantaoTitle: { fontSize: 18, fontWeight: 'bold', color: '#131826' },

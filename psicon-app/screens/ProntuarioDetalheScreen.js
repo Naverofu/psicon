@@ -176,14 +176,14 @@ export default function ProntuarioDetalheScreen({ route, navigation }) {
           <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Histórico de Evolução</Text>
 
           {carregandoHistorico ? (
-             <ActivityIndicator size="small" color="#05F2F2" style={{ marginTop: 20 }} />
+             <ActivityIndicator size="small" color="#BECFBB" style={{ marginTop: 20 }} />
           ) : historico.length === 0 ? (
              <Text style={{ color: '#A0A0A0', marginTop: 10 }}>Nenhuma anotação prévia para esta consulta.</Text>
           ) : (
             historico.map((item) => (
               <View key={item.id} style={styles.historyCard}>
                 <View style={styles.historyHeader}>
-                  <Ionicons name="calendar" size={16} color="#05F2F2" style={{ marginRight: 6 }} />
+                  <Ionicons name="calendar" size={16} color="#BECFBB" style={{ marginRight: 6 }} />
                   <Text style={styles.historyDate}>{item.data}</Text>
                 </View>
                 <Text style={styles.historyText}>{item.texto}</Text>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   editorFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#F5F5F5', backgroundColor: '#FAFAFA', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
   attachButton: { flexDirection: 'row', alignItems: 'center' },
   attachText: { color: '#1E88E5', fontWeight: '500', marginLeft: 4 },
-  saveButton: { backgroundColor: '#05F2F2', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
+  saveButton: { backgroundColor: '#BECFBB', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   saveButtonText: { color: '#131826', fontWeight: 'bold', fontSize: 15 },
   historyCard: { backgroundColor: '#FFF', padding: 20, borderRadius: 18, marginBottom: 15, borderWidth: 1, borderColor: '#F0F0F0' },
   historyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, backgroundColor: '#131826', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },

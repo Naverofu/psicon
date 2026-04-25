@@ -7,7 +7,8 @@ import {
   ScrollView,
   Modal,
   Animated,
-  Dimensions
+  Dimensions,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,30 +20,68 @@ export default function HomeScreen({ navigation }) {
   const [humorSelecionado, setHumorSelecionado] = useState(null);
   const [menuVisivel, setMenuVisivel] = useState(false);
 
-  // Variáveis para guardar os dados carregados do perfil
+  const [idUsuarioLogado, setIdUsuarioLogado] = useState(null);
   const [nomeUsuario, setNomeUsuario] = useState('Paciente');
   const [emailUsuario, setEmailUsuario] = useState('');
+  const [fotoPerfil, setFotoPerfil] = useState(null);
 
   const slideAnim = useRef(new Animated.Value(width)).current;
 
-  // Lógica para puxar os dados do utilizador assim que a tela abre
-  useEffect(() => {
-    const carregarDadosUsuario = async () => {
-      try {
-        const jsonValue = await AsyncStorage.getItem('usuarioData');
-        if (jsonValue != null) {
-          const usuario = JSON.parse(jsonValue);
-          const primeiroNome = usuario.nomeUsuario.split(' ')[0]; // Pega apenas o primeiro nome
-          setNomeUsuario(primeiroNome);
-          setEmailUsuario(usuario.emailUsuario);
-        }
-      } catch (error) {
-        console.log("Erro ao carregar os dados:", error);
-      }
-    };
+  // Função inteligente que carrega os dados e verifica se já registou o humor hoje
+  const carregarDadosUsuarioEHumor = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('usuarioData');
+      if (jsonValue != null) {
+        const usuario = JSON.parse(jsonValue);
+        const primeiroNome = usuario.nomeUsuario ? usuario.nomeUsuario.split(' ')[0] : 'Paciente';
+        const userId = usuario.idUsuario;
 
-    carregarDadosUsuario();
-  }, []);
+        setIdUsuarioLogado(userId);
+        setNomeUsuario(primeiroNome);
+        setEmailUsuario(usuario.emailUsuario);
+        setFotoPerfil(usuario.fotoPerfil || null);
+
+        // 👇 LÓGICA DO HUMOR DIÁRIO 👇
+        const hoje = new Date().toISOString().split('T')[0]; // Pega apenas a data YYYY-MM-DD
+        const chaveHumorHoje = `humor_${userId}_${hoje}`; // Ex: humor_1_2026-04-24
+
+        const humorSalvo = await AsyncStorage.getItem(chaveHumorHoje);
+
+        if (humorSalvo) {
+            setHumorSelecionado(humorSalvo); // Se já votou hoje, mantém selecionado!
+        } else {
+            setHumorSelecionado(null); // Se é um novo dia, limpa a seleção
+        }
+      }
+    } catch (error) {
+      console.log("Erro ao carregar os dados:", error);
+    }
+  };
+
+  useEffect(() => {
+    carregarDadosUsuarioEHumor();
+    const unsubscribe = navigation.addListener('focus', () => {
+      carregarDadosUsuarioEHumor();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // Função que guarda o humor no telemóvel assim que o utilizador clica
+  const salvarHumorHoje = async (idHumor) => {
+    setHumorSelecionado(idHumor); // Atualiza a tela na hora
+
+    if (!idUsuarioLogado) return;
+
+    try {
+        const hoje = new Date().toISOString().split('T')[0];
+        const chaveHumorHoje = `humor_${idUsuarioLogado}_${hoje}`;
+
+        // Guarda no cofre do telemóvel
+        await AsyncStorage.setItem(chaveHumorHoje, idHumor.toString());
+    } catch (error) {
+        console.log("Erro ao salvar o humor diário:", error);
+    }
+  };
 
   const abrirMenu = () => {
     setMenuVisivel(true);
@@ -81,12 +120,15 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.header}>
           <View>
-            {/* O nome é puxado dinamicamente aqui */}
             <Text style={styles.greetingText}>Olá, {nomeUsuario}!</Text>
             <Text style={styles.subtitleText}>Como você está se sentindo hoje?</Text>
           </View>
           <TouchableOpacity onPress={abrirMenu} style={styles.profileButton}>
-            <Ionicons name="person" size={24} color="#FFF" />
+            {fotoPerfil ? (
+              <Image source={{ uri: fotoPerfil }} style={styles.profileImageSmall} />
+            ) : (
+              <Ionicons name="person" size={24} color="#FFF" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -95,7 +137,7 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               key={item.id}
               style={[styles.moodItem, humorSelecionado === item.id && styles.moodItemSelected]}
-              onPress={() => setHumorSelecionado(item.id)}
+              onPress={() => salvarHumorHoje(item.id)} /* 👇 Agora chama a função de salvar 👇 */
             >
               <Text style={styles.moodEmoji}>{item.emoji}</Text>
               <Text style={[styles.moodLabel, humorSelecionado === item.id && styles.moodLabelSelected]}>
@@ -107,13 +149,12 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.appointmentCard}>
           <View style={styles.appointmentHeader}>
-            <Ionicons name="calendar" size={20} color="#05F2F2" />
+            <Ionicons name="calendar" size={20} color="#BECFBB" />
             <Text style={styles.appointmentTitle}>Sua consulta é hoje!</Text>
           </View>
           <Text style={styles.doctorName}>Dra. Ana Souza</Text>
           <Text style={styles.appointmentTime}>14:00 - 15:00 • Terapia Cognitiva</Text>
 
-          {/* AQUI ESTÁ A CORREÇÃO: Botão de Entrar na Sala agora leva pro Chat! */}
           <TouchableOpacity
             style={styles.joinButton}
             onPress={() => navigation.navigate('Chat')}
@@ -149,7 +190,6 @@ export default function HomeScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* Botão flutuante mantido caso o usuário role a tela para baixo */}
       <TouchableOpacity
         style={styles.floatingChatButton}
         onPress={() => navigation.navigate('Chat')}
@@ -164,9 +204,12 @@ export default function HomeScreen({ navigation }) {
           <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
             <View style={styles.sideMenuHeader}>
               <View style={styles.sideMenuProfile}>
-                <Ionicons name="person" size={32} color="#FFF" />
+                {fotoPerfil ? (
+                  <Image source={{ uri: fotoPerfil }} style={styles.profileImageLarge} />
+                ) : (
+                  <Ionicons name="person" size={32} color="#FFF" />
+                )}
               </View>
-              {/* O nome e e-mail no menu lateral agora são dinâmicos */}
               <Text style={styles.sideMenuName}>{nomeUsuario}</Text>
               <Text style={styles.sideMenuEmail}>{emailUsuario}</Text>
             </View>
@@ -177,7 +220,6 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.menuItemText}>Meu Perfil</Text>
               </TouchableOpacity>
 
-              {/* Botão de Pagamentos no Menu Lateral */}
               <TouchableOpacity style={styles.menuItem} onPress={() => { fecharMenu(); setTimeout(() => navigation.navigate('Pagamentos'), 250); }}>
                 <Ionicons name="card-outline" size={22} color="#131826" />
                 <Text style={styles.menuItemText}>Pagamentos</Text>
@@ -203,7 +245,6 @@ export default function HomeScreen({ navigation }) {
           </Animated.View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -215,6 +256,8 @@ const styles = StyleSheet.create({
   greetingText: { fontSize: 26, fontWeight: 'bold', color: '#131826' },
   subtitleText: { fontSize: 15, color: '#A0A0A0', marginTop: 4 },
   profileButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#131826', justifyContent: 'center', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  profileImageSmall: { width: 50, height: 50, borderRadius: 25 },
+  profileImageLarge: { width: 70, height: 70, borderRadius: 35 },
   moodContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 25 },
   moodItem: { alignItems: 'center', backgroundColor: '#FFF', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 15, borderWidth: 1, borderColor: '#E0E0E0', width: 60 },
   moodItemSelected: { backgroundColor: '#E8F5E9', borderColor: '#168C04' },
@@ -223,10 +266,10 @@ const styles = StyleSheet.create({
   moodLabelSelected: { color: '#168C04' },
   appointmentCard: { marginHorizontal: 20, backgroundColor: '#131826', borderRadius: 20, padding: 20, marginBottom: 25, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6 },
   appointmentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  appointmentTitle: { color: '#05F2F2', fontWeight: 'bold', fontSize: 14, marginLeft: 8, textTransform: 'uppercase' },
+  appointmentTitle: { color: '#BECFBB', fontWeight: 'bold', fontSize: 14, marginLeft: 8, textTransform: 'uppercase' },
   doctorName: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
   appointmentTime: { color: '#A0A0A0', fontSize: 15, marginTop: 4, marginBottom: 15 },
-  joinButton: { backgroundColor: '#05F2F2', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
+  joinButton: { backgroundColor: '#BECFBB', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
   joinButtonText: { color: '#131826', fontWeight: 'bold', fontSize: 15 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#131826', paddingHorizontal: 20, marginBottom: 15 },
   tipsScrollView: { marginBottom: 25 },
@@ -239,14 +282,14 @@ const styles = StyleSheet.create({
   emergencyTextContainer: { flex: 1 },
   emergencyTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   emergencySubtitle: { color: '#FFCDD2', fontSize: 13, marginTop: 2, lineHeight: 18 },
-  floatingChatButton: { position: 'absolute', bottom: 110, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#05F2F2', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  floatingChatButton: { position: 'absolute', bottom: 110, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#BECFBB', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#BECFBB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
   modalOverlay: { flex: 1, flexDirection: 'row' },
   modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   sideMenu: { width: width * 0.75, backgroundColor: '#FFF', height: '100%', position: 'absolute', right: 0, shadowColor: '#000', shadowOffset: { width: -5, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 },
   sideMenuHeader: { backgroundColor: '#131826', padding: 30, paddingTop: 60, borderBottomLeftRadius: 30 },
   sideMenuProfile: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#2A3143', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   sideMenuName: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
-  sideMenuEmail: { color: '#05F2F2', fontSize: 14 },
+  sideMenuEmail: { color: '#BECFBB', fontSize: 14 },
   menuItemsContainer: { padding: 20, paddingTop: 30 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   menuItemText: { fontSize: 16, color: '#131826', fontWeight: '500', marginLeft: 15 },

@@ -35,7 +35,8 @@ function MainTabs() {
       case 'Agenda': icon = 'calendar'; break;
       case 'Consultas': icon = 'folder-open'; break;
     }
-    return <Ionicons name={icon} size={28} color={routeName === selectedTab ? '#05F2F2' : '#A0A0A0'} />;
+    // 👇 INJEÇÃO: Ícones laterais agora usam o Verde Sálvia (#BECFBB) quando selecionados 👇
+    return <Ionicons name={icon} size={28} color={routeName === selectedTab ? '#BECFBB' : '#A0A0A0'} />;
   };
 
   const renderTabBar = ({ routeName, selectedTab, navigate }) => (
@@ -47,13 +48,20 @@ function MainTabs() {
   return (
     <CurvedBottomBar.Navigator
       type="UP" style={styles.bottomBar} shadowStyle={styles.shadow} height={(Platform.OS === 'ios' ? 85 : 70) + insets.bottom} circleWidth={55} bgColor="#131826" initialRouteName="Início" borderTopLeftRight screenOptions={{ headerShown: false }}
-      renderCircle={({ selectedTab, navigate }) => (
-        <Animated.View style={[styles.btnCircleUp, { bottom: (Platform.OS === 'ios' ? 30 : -25) + insets.bottom }]}>
-          <TouchableOpacity style={styles.button} onPress={() => navigate('Início')}>
-            <Ionicons name="home" color="#131826" size={28} />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+      renderCircle={({ selectedTab, navigate }) => {
+        const isActive = selectedTab === 'Início';
+        return (
+          <Animated.View style={[
+            styles.btnCircleUp,
+            { bottom: (Platform.OS === 'ios' ? 30 : -25) + insets.bottom },
+            isActive ? styles.btnCircleActive : styles.btnCircleInactive
+          ]}>
+            <TouchableOpacity style={styles.button} onPress={() => navigate('Início')}>
+              <Ionicons name="home" color={isActive ? "#131826" : "#A0A0A0"} size={28} />
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      }}
       tabBar={renderTabBar}
     >
       <CurvedBottomBar.Screen name="Agenda" position="LEFT" component={AgendaScreen} />
@@ -71,7 +79,8 @@ function PsicologoTabs() {
       case 'Prontuarios': icon = 'document-text'; break;
       case 'Horarios': icon = 'time'; break;
     }
-    return <Ionicons name={icon} size={28} color={routeName === selectedTab ? '#05F2F2' : '#A0A0A0'} />;
+    // 👇 INJEÇÃO: Ícones laterais do Psicólogo também atualizados para o Verde Sálvia 👇
+    return <Ionicons name={icon} size={28} color={routeName === selectedTab ? '#BECFBB' : '#A0A0A0'} />;
   };
 
   const renderTabBar = ({ routeName, selectedTab, navigate }) => (
@@ -83,14 +92,20 @@ function PsicologoTabs() {
   return (
     <CurvedBottomBar.Navigator
       type="UP" style={styles.bottomBar} shadowStyle={styles.shadow} height={(Platform.OS === 'ios' ? 85 : 70) + insets.bottom} circleWidth={55} bgColor="#131826" initialRouteName="PsicologoHome" borderTopLeftRight screenOptions={{ headerShown: false }}
-      renderCircle={({ selectedTab, navigate }) => (
-        <Animated.View style={[styles.btnCircleUp, { bottom: (Platform.OS === 'ios' ? 30 : -25) + insets.bottom }]}>
-          <TouchableOpacity style={styles.button} onPress={() => navigate('PsicologoHome')}>
-            {/* 👇 Aqui o ícone "grid" foi alterado para "home" 👇 */}
-            <Ionicons name="home" color="#131826" size={28} />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+      renderCircle={({ selectedTab, navigate }) => {
+        const isActive = selectedTab === 'PsicologoHome';
+        return (
+          <Animated.View style={[
+            styles.btnCircleUp,
+            { bottom: (Platform.OS === 'ios' ? 30 : -25) + insets.bottom },
+            isActive ? styles.btnCircleActive : styles.btnCircleInactive
+          ]}>
+            <TouchableOpacity style={styles.button} onPress={() => navigate('PsicologoHome')}>
+              <Ionicons name="home" color={isActive ? "#131826" : "#A0A0A0"} size={28} />
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      }}
       tabBar={renderTabBar}
     >
       <CurvedBottomBar.Screen name="Prontuarios" position="LEFT" component={ProntuariosScreen} />
@@ -128,6 +143,32 @@ const styles = StyleSheet.create({
   shadow: { shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 10 },
   button: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   bottomBar: { backgroundColor: 'transparent' },
-  btnCircleUp: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: '#05F2F2', bottom: Platform.OS === 'ios' ? 30 : 18, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8 },
+
+  btnCircleUp: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  btnCircleActive: {
+    backgroundColor: '#BECFBB',
+    shadowColor: '#BECFBB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    elevation: 8
+  },
+
+  btnCircleInactive: {
+    backgroundColor: '#2A3143',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2
+  },
+
   tabbarItem: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: Platform.OS === 'ios' ? -10 : 0 },
 });

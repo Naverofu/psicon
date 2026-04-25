@@ -109,7 +109,7 @@ export default function ConsultasScreen({ navigation }) {
 
         {carregando ? (
           <View style={{ marginTop: 50, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#05F2F2" />
+            <ActivityIndicator size="large" color="#BECFBB" />
             <Text style={{ marginTop: 15, color: '#A0A0A0' }}>Buscando sua agenda no servidor...</Text>
           </View>
         ) : abaAtiva === 'Proximas' ? (
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#131826' },
   tabContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
   tabButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: '#E0E0E0' },
-  tabButtonActive: { borderBottomColor: '#05F2F2' },
+  tabButtonActive: { borderBottomColor: '#BECFBB' },
   tabText: { fontSize: 16, color: '#A0A0A0', fontWeight: '500' },
   tabTextActive: { color: '#131826', fontWeight: 'bold' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 100 },
@@ -210,11 +210,11 @@ const styles = StyleSheet.create({
   psicologoName: { fontSize: 18, fontWeight: 'bold', color: '#131826', marginBottom: 10 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   infoText: { fontSize: 14, color: '#666', marginLeft: 6 },
-  joinButton: { backgroundColor: '#05F2F2', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
+  joinButton: { backgroundColor: '#BECFBB', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
   joinButtonText: { color: '#131826', fontWeight: 'bold', fontSize: 15 },
 
   /* ESTILOS DO NOVO BOTÃO DE PAGAMENTOS */
-  pagamentosCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 20, borderRadius: 20, marginBottom: 25, elevation: 4, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, borderWidth: 1, borderColor: '#E0FFFF' },
+  pagamentosCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 20, borderRadius: 20, marginBottom: 25, elevation: 4, shadowColor: '#BECFBB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, borderWidth: 1, borderColor: '#E0FFFF' },
   pagamentosIconContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#131826', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   pagamentosTextContainer: { flex: 1 },
   pagamentosTitle: { fontSize: 16, fontWeight: 'bold', color: '#131826' },

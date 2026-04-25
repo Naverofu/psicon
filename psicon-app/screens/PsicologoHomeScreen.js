@@ -9,7 +9,8 @@ import {
   Modal,
   Animated,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  Image // INJEÇÃO: Importação de Imagem
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,11 +28,13 @@ export default function PsicologoHomeScreen({ navigation }) {
   const [iniciais, setIniciais] = useState('Psi');
   const [crpOuEmail, setCrpOuEmail] = useState('');
 
+  // 👇 INJEÇÃO: Estado para guardar a Foto 👇
+  const [fotoPerfil, setFotoPerfil] = useState(null);
+
   // Estado da Emergência
   const [disponivelEmergencia, setDisponivelEmergencia] = useState(false);
   const [carregandoEmergencia, setCarregandoEmergencia] = useState(false);
 
-  // 👇 INJEÇÃO: Novos estados para a Agenda Real 👇
   const [consultasHoje, setConsultasHoje] = useState([]);
   const [carregandoConsultas, setCarregandoConsultas] = useState(true);
 
@@ -43,7 +46,6 @@ export default function PsicologoHomeScreen({ navigation }) {
         const usuario = JSON.parse(jsonValue);
         setPsicologoId(usuario.idUsuario);
 
-        // Formata o Nome e UI do Header
         const nomeCompleto = usuario.nomeUsuario || 'Psicólogo';
         setNomeUsuario(nomeCompleto);
         const partesNome = nomeCompleto.split(' ');
@@ -55,15 +57,15 @@ export default function PsicologoHomeScreen({ navigation }) {
         setCrpOuEmail(usuario.crp ? `CRP: ${usuario.crp}` : usuario.emailUsuario);
         setDisponivelEmergencia(usuario.disponivelEmergencia || false);
 
-        // 👇 BUSCA A AGENDA NO BACKEND 👇
+        // Puxa a imagem em Base64
+        setFotoPerfil(usuario.fotoPerfil || null);
+
         try {
           const response = await api.get(`/consultas/psicologo/${usuario.idUsuario}`);
           const todasConsultas = response.data;
 
           const formatadas = [];
-
           todasConsultas.forEach(c => {
-            // Filtra para exibir apenas consultas ativas no painel de hoje
             if (c.statusConsulta === 'AGENDADA' || c.statusConsulta === 'EM_ANDAMENTO') {
               const dataObj = new Date(c.dataHoraConsulta);
               const horaStr = String(dataObj.getHours()).padStart(2, '0');
@@ -79,7 +81,6 @@ export default function PsicologoHomeScreen({ navigation }) {
             }
           });
 
-          // Ordena pela hora mais próxima
           formatadas.sort((a, b) => a.hora.localeCompare(b.hora));
           setConsultasHoje(formatadas);
 
@@ -95,7 +96,6 @@ export default function PsicologoHomeScreen({ navigation }) {
     }
   };
 
-  // Executa ao abrir e sempre que a tela ganha foco
   useEffect(() => {
     carregarPainelCompleto();
     const unsubscribe = navigation.addListener('focus', () => {
@@ -141,7 +141,6 @@ export default function PsicologoHomeScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
 
-        {/* Cabeçalho */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greetingText}>Olá, {nomeUsuario.split(' ')[0]}!</Text>
@@ -154,14 +153,18 @@ export default function PsicologoHomeScreen({ navigation }) {
             )}
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={abrirMenu}>
-            <Text style={styles.profileText}>{iniciais}</Text>
+            {/* 👇 INJEÇÃO: Imagem no Header do Psicólogo 👇 */}
+            {fotoPerfil ? (
+              <Image source={{ uri: fotoPerfil }} style={styles.profileImageSmall} />
+            ) : (
+              <Text style={styles.profileText}>{iniciais}</Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Resumo Rápido */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Ionicons name="people-outline" size={24} color="#05F2F2" />
+            <Ionicons name="people-outline" size={24} color="#BECFBB" />
             <Text style={styles.statValue}>12</Text>
             <Text style={styles.statLabel}>Pacientes Ativos</Text>
           </View>
@@ -172,7 +175,6 @@ export default function PsicologoHomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Agenda do Dia */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Agenda de Hoje</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Horarios')}>
@@ -180,10 +182,9 @@ export default function PsicologoHomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* 👇 Renderização Inteligente da Agenda 👇 */}
         {carregandoConsultas ? (
           <View style={{ paddingVertical: 30, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#05F2F2" />
+            <ActivityIndicator size="large" color="#BECFBB" />
           </View>
         ) : consultasHoje.length === 0 ? (
           <View style={{ paddingVertical: 30, alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, borderWidth: 1, borderColor: '#F0F0F0', marginBottom: 15 }}>
@@ -227,10 +228,8 @@ export default function PsicologoHomeScreen({ navigation }) {
           ))
         )}
 
-        {/* Ações Rápidas */}
         <Text style={[styles.sectionTitle, { marginTop: 10, marginBottom: 15 }]}>Ações Rápidas</Text>
         <View style={styles.quickActionsContainer}>
-
           <TouchableOpacity style={styles.quickActionCard} onPress={toggleEmergencia} disabled={carregandoEmergencia}>
             <View style={[styles.quickActionIcon, { backgroundColor: disponivelEmergencia ? '#FFCDD2' : '#E3F2FD' }]}>
               {carregandoEmergencia ? (
@@ -261,7 +260,6 @@ export default function PsicologoHomeScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* Botão Flutuante */}
       <TouchableOpacity
         style={styles.floatingChatButton}
         onPress={() => navigation.navigate('PsicologoInbox')}
@@ -269,7 +267,6 @@ export default function PsicologoHomeScreen({ navigation }) {
         <Ionicons name="chatbubbles" size={28} color="#131826" />
       </TouchableOpacity>
 
-      {/* Menu Lateral */}
       <Modal visible={menuVisivel} transparent={true} animationType="none" onRequestClose={fecharMenu}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalBackground} activeOpacity={1} onPress={fecharMenu} />
@@ -277,7 +274,12 @@ export default function PsicologoHomeScreen({ navigation }) {
           <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
             <View style={styles.sideMenuHeader}>
               <View style={styles.sideMenuProfile}>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#131826' }}>{iniciais}</Text>
+                {/* 👇 INJEÇÃO: Imagem no Menu do Psicólogo 👇 */}
+                {fotoPerfil ? (
+                  <Image source={{ uri: fotoPerfil }} style={styles.profileImageLarge} />
+                ) : (
+                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#131826' }}>{iniciais}</Text>
+                )}
               </View>
               <Text style={styles.sideMenuName}>{nomeUsuario}</Text>
               <Text style={styles.sideMenuEmail}>{crpOuEmail}</Text>
@@ -322,8 +324,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, marginBottom: 25 },
   greetingText: { fontSize: 26, fontWeight: 'bold', color: '#131826' },
   subtitleText: { fontSize: 15, color: '#A0A0A0', marginTop: 4 },
-  profileButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#1E88E5' },
+  profileButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#1E88E5', overflow: 'hidden' }, // overflow para a imagem não vazar do circulo
   profileText: { fontSize: 18, fontWeight: 'bold', color: '#1E88E5' },
+  profileImageSmall: { width: 50, height: 50, borderRadius: 25 }, // INJEÇÃO
+  profileImageLarge: { width: 70, height: 70, borderRadius: 35 }, // INJEÇÃO
   statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   statCard: { flex: 0.48, backgroundColor: '#131826', padding: 20, borderRadius: 20, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6 },
   statValue: { fontSize: 24, fontWeight: 'bold', color: '#FFF', marginTop: 10 },
@@ -340,18 +344,18 @@ const styles = StyleSheet.create({
   consultaTipo: { fontSize: 14, color: '#666', marginTop: 4, marginBottom: 20 },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
   actionButton: { flex: 0.48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: '#F5F5F5' },
-  actionButtonPrimary: { backgroundColor: '#05F2F2' },
+  actionButtonPrimary: { backgroundColor: '#BECFBB' },
   actionButtonText: { fontSize: 14, fontWeight: 'bold', color: '#131826' },
   quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   quickActionCard: { flex: 0.31, backgroundColor: '#FFF', padding: 15, borderRadius: 15, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
   quickActionIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   quickActionText: { fontSize: 12, fontWeight: '600', color: '#131826', textAlign: 'center' },
-  floatingChatButton: { position: 'absolute', bottom: 110, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#05F2F2', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#05F2F2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  floatingChatButton: { position: 'absolute', bottom: 110, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: '#BECFBB', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#BECFBB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
   modalOverlay: { flex: 1, flexDirection: 'row' },
   modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   sideMenu: { width: width * 0.75, backgroundColor: '#FFF', height: '100%', position: 'absolute', right: 0, shadowColor: '#000', shadowOffset: { width: -5, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 },
-  sideMenuHeader: { backgroundColor: '#05F2F2', padding: 30, paddingTop: 60, borderBottomLeftRadius: 30 },
-  sideMenuProfile: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  sideMenuHeader: { backgroundColor: '#BECFBB', padding: 30, paddingTop: 60, borderBottomLeftRadius: 30 },
+  sideMenuProfile: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden' }, // overflow hidden garante bordas arredondadas da foto
   sideMenuName: { color: '#131826', fontSize: 22, fontWeight: 'bold' },
   sideMenuEmail: { color: '#131826', fontSize: 14 },
   menuItemsContainer: { padding: 20, paddingTop: 30 },

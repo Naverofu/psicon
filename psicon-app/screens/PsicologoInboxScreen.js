@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   nomePaciente: { fontSize: 16, fontWeight: '600', color: '#131826' },
   textoNaoLido: { fontWeight: 'bold' },
   tempoTexto: { fontSize: 12, color: '#A0A0A0' },
-  tempoTextoNaoLido: { color: '#05F2F2', fontWeight: 'bold' },
+  tempoTextoNaoLido: { color: '#BECFBB', fontWeight: 'bold' },
   ultimaMensagem: { fontSize: 14, color: '#666', paddingRight: 10 },
-  badgeNaoLida: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#05F2F2', position: 'absolute', right: 15, top: '50%', marginTop: -5 }
+  badgeNaoLida: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#BECFBB', position: 'absolute', right: 15, top: '50%', marginTop: -5 }
 });

@@ -132,7 +132,7 @@ export default function ProntuariosScreen({ navigation }) {
 
       {carregando ? (
         <View style={{ marginTop: 50, alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#05F2F2" />
+          <ActivityIndicator size="large" color="#BECFBB" />
           <Text style={{ marginTop: 15, color: '#A0A0A0' }}>Carregando seus pacientes...</Text>
         </View>
       ) : prontuariosFiltrados.length === 0 ? (
