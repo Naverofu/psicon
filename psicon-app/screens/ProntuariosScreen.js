@@ -16,69 +16,23 @@ import api from '../services/api';
 export default function ProntuariosScreen({ navigation }) {
   const [busca, setBusca] = useState('');
 
-  // Nossas variáveis agora começam vazias para receber os dados reais do Java
-  const [prontuarios, setProntuarios] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  // 👇 INJEÇÃO PARA OS PRINTS: Dados fixos de super-heróis 👇
+  const [prontuarios, setProntuarios] = useState([
+    { id: '1', consultaId: '101', paciente: 'Peter Parker (Homem-Aranha)', ultimaSessao: '10/04/2026', status: 'Em Acompanhamento' },
+    { id: '2', consultaId: '102', paciente: 'Wanda Maximoff (Feiticeira Escarlate)', ultimaSessao: '05/04/2026', status: 'Alta' },
+  ]);
 
-  // 👇 INJEÇÃO: Busca as consultas do psicólogo e agrupa por paciente 👇
+  // Como estamos a usar dados fixos para os prints, não precisamos da tela de "carregando"
+  const [carregando, setCarregando] = useState(false);
+
   useEffect(() => {
-    const carregarPacientes = async () => {
-      try {
-        const jsonValue = await AsyncStorage.getItem('usuarioData');
-        if (jsonValue != null) {
-          const usuario = JSON.parse(jsonValue);
-
-          // Puxa o histórico de consultas deste psicólogo
-          const response = await api.get(`/consultas/psicologo/${usuario.idUsuario}`);
-          const todasConsultas = response.data;
-
-          // Mapa para agrupar as consultas por Paciente (para não aparecer o mesmo paciente repetido)
-          const pacientesMap = new Map();
-
-          todasConsultas.forEach(c => {
-            if (c.pacienteTitular) {
-              const nomePaciente = c.pacienteTitular.nomeUsuario;
-
-              // Formata a data da sessão
-              const dataObj = new Date(c.dataHoraConsulta);
-              const dia = String(dataObj.getDate()).padStart(2, '0');
-              const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-              const ano = dataObj.getFullYear();
-              const dataFormatada = `${dia}/${mes}/${ano}`;
-
-              // Se o paciente ainda não está na lista, adicionamos
-              // Salvamos o idConsulta para podermos buscar as anotações exatas na próxima tela
-              if (!pacientesMap.has(nomePaciente)) {
-                pacientesMap.set(nomePaciente, {
-                  id: c.pacienteTitular.idUsuario.toString(),
-                  consultaId: c.idConsulta, // Importante para o ProntuarioController do Java!
-                  paciente: nomePaciente,
-                  ultimaSessao: dataFormatada,
-                  status: 'Ativo' // Pode evoluir para pegar o status real do paciente no futuro
-                });
-              }
-            }
-          });
-
-          // Converte o Mapa de volta para um Array para o FlatList ler
-          setProntuarios(Array.from(pacientesMap.values()));
-        }
-      } catch (error) {
-        console.log("Erro ao buscar pacientes/prontuários:", error);
-      } finally {
-        setCarregando(false);
-      }
-    };
-
-    // Atualiza a lista sempre que a tela for aberta
-    const unsubscribe = navigation.addListener('focus', () => {
-      setCarregando(true);
-      carregarPacientes();
-    });
-
+    // ⚠️ Desliguei a busca real da base de dados temporariamente para forçar a exibição dos pacientes heróis!
+    /*
+    const carregarPacientes = async () => { ... }
+    const unsubscribe = navigation.addListener('focus', () => { ... });
     return unsubscribe;
+    */
   }, [navigation]);
-  // 👆 FIM DA INJEÇÃO 👆
 
   // Filtro inteligente para a barra de pesquisa
   const prontuariosFiltrados = prontuarios.filter(p =>

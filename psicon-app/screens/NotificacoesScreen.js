@@ -65,7 +65,8 @@ export default function NotificacoesScreen({ navigation }) {
           <View style={styles.settingRow}>
             <View style={styles.textContainer}>
               <Text style={styles.settingLabel}>Novas mensagens no chat</Text>
-              <Text style={styles.settingSubLabel}>Quando seu psicólogo enviar uma mensagem.</Text>
+              {/* 👇 AQUI ESTÁ A NOSSA SUPER-HEROÍNA 👇 */}
+              <Text style={styles.settingSubLabel}>Quando a Dra. Diana (Mulher-Maravilha) enviar uma mensagem.</Text>
             </View>
             <Switch
               trackColor={{ false: "#E0E0E0", true: "#E8F5E9" }}

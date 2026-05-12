@@ -10,7 +10,7 @@ import {
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator // Injetado para mostrar carregamento
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,8 +21,6 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
-
-  // 👇 INJEÇÃO: Controle de estado de carregamento 👇
   const [carregando, setCarregando] = useState(false);
 
   const handleLogin = async () => {
@@ -31,7 +29,7 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    setCarregando(true); // Inicia o carregamento
+    setCarregando(true);
 
     try {
       const payloadLogin = {
@@ -42,10 +40,8 @@ export default function LoginScreen({ navigation }) {
       const response = await api.post('/usuarios/login', payloadLogin);
       const usuarioLogado = response.data;
 
-      // Guardamos todos os dados do usuário no telemóvel
       await AsyncStorage.setItem('usuarioData', JSON.stringify(usuarioLogado));
 
-      // REDIRECIONAMENTO INTELIGENTE:
       if (usuarioLogado.tipoUsuario === "PSICOLOGO" ||
           usuarioLogado.emailUsuario.toLowerCase().includes('psi') ||
           usuarioLogado.emailUsuario.toLowerCase().includes('dra')) {
@@ -63,11 +59,10 @@ export default function LoginScreen({ navigation }) {
         Alert.alert('Erro de Conexão', 'Não foi possível ligar ao servidor. Verifique a sua internet e se o sistema está online.');
       }
     } finally {
-      setCarregando(false); // Para o carregamento independentemente do resultado
+      setCarregando(false);
     }
   };
 
-  // 👇 INJEÇÃO: Lógica para Recuperar a Senha 👇
   const handleEsqueciSenha = () => {
     if (email.trim() === '') {
       Alert.alert(
@@ -77,7 +72,6 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    // Como é um TCC, simulamos o envio com sucesso para o e-mail digitado
     Alert.alert(
       'E-mail Enviado!',
       `Enviámos as instruções de recuperação de senha para: \n\n${email}\n\nVerifique a sua caixa de entrada e pasta de spam.`
@@ -114,7 +108,7 @@ export default function LoginScreen({ navigation }) {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
-                editable={!carregando} // Impede edição enquanto carrega
+                editable={!carregando}
               />
             </View>
 
@@ -127,14 +121,13 @@ export default function LoginScreen({ navigation }) {
                 secureTextEntry={!mostrarSenha}
                 value={senha}
                 onChangeText={setSenha}
-                editable={!carregando} // Impede edição enquanto carrega
+                editable={!carregando}
               />
               <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={styles.eyeIcon}>
                 <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={22} color="#A0A0A0" />
               </TouchableOpacity>
             </View>
 
-            {/* 👇 Botão agora possui ação onPress 👇 */}
             <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleEsqueciSenha}>
               <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
             </TouchableOpacity>
@@ -144,7 +137,6 @@ export default function LoginScreen({ navigation }) {
               onPress={handleLogin}
               disabled={carregando}
             >
-              {/* 👇 Renderiza o spinner ou o texto dependendo do estado 👇 */}
               {carregando ? (
                 <ActivityIndicator size="small" color="#131826" />
               ) : (
@@ -161,13 +153,17 @@ export default function LoginScreen({ navigation }) {
               <View style={styles.separatorLine} />
             </View>
 
+            {/* 👇 Botão secundário refeito para um design "Clean" e minimalista 👇 */}
             <TouchableOpacity
               style={styles.buttonSecondary}
               onPress={() => navigation.navigate('Cadastro')}
               disabled={carregando}
             >
-              <Text style={styles.buttonSecondaryText}>Novo por aqui? Criar Conta</Text>
+              <Text style={styles.buttonSecondaryText}>
+                Novo por aqui? <Text style={styles.buttonSecondaryTextBold}>Criar Conta</Text>
+              </Text>
             </TouchableOpacity>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -194,6 +190,9 @@ const styles = StyleSheet.create({
   separatorContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
   separatorLine: { flex: 1, height: 1, backgroundColor: '#E0E0E0' },
   separatorText: { color: '#A0A0A0', paddingHorizontal: 15, fontSize: 14, fontWeight: '500' },
-  buttonSecondary: { alignItems: 'center', width: '100%', paddingVertical: 15, backgroundColor: '#E8F5E9', borderRadius: 15 },
-  buttonSecondaryText: { color: '#168C04', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+
+  /* 👇 Novos estilos Clean para o Botão de Criar Conta 👇 */
+  buttonSecondary: { alignItems: 'center', width: '100%', paddingVertical: 10, backgroundColor: 'transparent' },
+  buttonSecondaryText: { color: '#A0A0A0', fontSize: 15, textAlign: 'center' },
+  buttonSecondaryTextBold: { color: '#45624E', fontWeight: 'bold' } // Verde Escuro para destacar a ação
 });

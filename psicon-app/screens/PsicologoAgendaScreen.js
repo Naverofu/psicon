@@ -16,9 +16,9 @@ import api from '../services/api';
 export default function PsicologoAgendaScreen({ navigation }) {
   const [diaSelecionado, setDiaSelecionado] = useState('Seg');
 
-  // Variáveis para a inteligência da API
   const [idPsicologo, setIdPsicologo] = useState(null);
-  const [carregando, setCarregando] = useState(true);
+  // Como estamos a mockar para o print, já começa falso
+  const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const diasSemana = [
@@ -29,32 +29,21 @@ export default function PsicologoAgendaScreen({ navigation }) {
     { id: 'Sex', nome: 'Sexta' },
   ];
 
-  // Agora começa vazio e preenche com os dados do banco!
+  // 👇 INJEÇÃO PARA O PRINT: Segunda-feira já vem com horários preenchidos 👇
   const [horariosAtivos, setHorariosAtivos] = useState({
-    'Seg': [], 'Ter': [], 'Qua': [], 'Qui': [], 'Sex': []
+    'Seg': ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00'],
+    'Ter': ['09:00', '10:00', '11:00'],
+    'Qua': [],
+    'Qui': [],
+    'Sex': []
   });
 
-  // Busca os dados no cofre ao abrir o ecrã
   useEffect(() => {
-    const carregarAgenda = async () => {
-      try {
-        const jsonValue = await AsyncStorage.getItem('usuarioData');
-        if (jsonValue != null) {
-          const usuario = JSON.parse(jsonValue);
-          setIdPsicologo(usuario.idUsuario);
-
-          // Se o psicólogo já salvou uma agenda antes, carrega os horários ativos
-          if (usuario.agendaHorarios) {
-            setHorariosAtivos(JSON.parse(usuario.agendaHorarios));
-          }
-        }
-      } catch (error) {
-        console.log("Erro ao carregar a agenda:", error);
-      } finally {
-        setCarregando(false);
-      }
-    };
+    // ⚠️ Busca real desligada temporariamente para os prints!
+    /*
+    const carregarAgenda = async () => { ... }
     carregarAgenda();
+    */
   }, []);
 
   const todosOsHorarios = [
@@ -78,32 +67,8 @@ export default function PsicologoAgendaScreen({ navigation }) {
     }
   };
 
-  // Salva a agenda real no Spring Boot
   const salvarAgenda = async () => {
-    if (!idPsicologo) return;
-    setSalvando(true);
-
-    try {
-      // Transforma o grid num texto JSON para viajar para o Java
-      const agendaString = JSON.stringify(horariosAtivos);
-
-      await api.put(`/usuarios/${idPsicologo}/agenda`, { agendaHorarios: agendaString });
-
-      // Atualiza o cofre do telemóvel para ele não esquecer a nova agenda
-      const jsonValue = await AsyncStorage.getItem('usuarioData');
-      if (jsonValue != null) {
-        let usuario = JSON.parse(jsonValue);
-        usuario.agendaHorarios = agendaString;
-        await AsyncStorage.setItem('usuarioData', JSON.stringify(usuario));
-      }
-
-      Alert.alert("Agenda Atualizada", "Os seus horários de atendimento foram salvos com sucesso no servidor.");
-    } catch (error) {
-      console.log("Erro ao salvar agenda:", error);
-      Alert.alert("Erro de Conexão", "Não foi possível salvar a agenda no servidor.");
-    } finally {
-      setSalvando(false);
-    }
+    Alert.alert("Agenda Atualizada", "Os seus horários de atendimento foram salvos com sucesso.");
   };
 
   return (

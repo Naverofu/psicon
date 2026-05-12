@@ -4,10 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function PsicologoInboxScreen({ navigation }) {
 
+  // 👇 INJEÇÃO PARA OS PRINTS: Caixa de entrada dos super-heróis 👇
   const conversas = [
-    { id: '1', paciente: 'Phil', ultimaMensagem: 'Tudo ótimo. Estarei na sala virtual...', tempo: '09:15', lida: false, avatar: 'P' },
-    { id: '2', paciente: 'Maria Silva', ultimaMensagem: 'Obrigada pela sessão de hoje, Dra!', tempo: 'Ontem', lida: true, avatar: 'M' },
-    { id: '3', paciente: 'João Pedro', ultimaMensagem: 'Podemos remarcar para quinta?', tempo: 'Segunda', lida: true, avatar: 'J' },
+    { id: '1', paciente: 'Peter Parker', ultimaMensagem: 'Doutor, o sentido aranha atacou de novo com a ansiedade...', tempo: '10:30', lida: false, avatar: 'P' },
+    { id: '2', paciente: 'Wanda Maximoff', ultimaMensagem: 'Obrigada pela sessão de hoje, me sinto mais no controle da realidade.', tempo: 'Ontem', lida: true, avatar: 'W' },
+    { id: '3', paciente: 'Clark Kent', ultimaMensagem: 'Podemos remarcar para quinta? O trabalho no Planeta Diário apertou.', tempo: 'Segunda', lida: true, avatar: 'C' },
   ];
 
   const renderConversa = ({ item }) => (

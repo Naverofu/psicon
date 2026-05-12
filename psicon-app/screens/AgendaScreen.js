@@ -45,18 +45,28 @@ export default function AgendaScreen({ navigation }) {
           setIdPacienteAtual(JSON.parse(jsonValue).idUsuario);
         }
 
-        const response = await api.get('/usuarios/psicologos');
+        // 👇 INJEÇÃO PARA O PRINT: Lista fixa de Psicólogos Heróis 👇
+        const psicologosMock = [
+          {
+            id: '1',
+            nome: 'Dra. Diana (Mulher-Maravilha)',
+            especialidade: 'Terapia Cognitiva',
+            avaliacao: '5.0',
+            preco: '150.00',
+            horarios: ['09:00', '14:00', '16:30']
+          },
+          {
+            id: '2',
+            nome: 'Dr. Bruce Wayne (Batman)',
+            especialidade: 'Psicanálise',
+            avaliacao: '4.9',
+            preco: '250.00',
+            horarios: ['10:00', '11:00', '15:00']
+          }
+        ];
 
-        const psicologosDoBanco = response.data.map(psi => ({
-          id: psi.idUsuario,
-          nome: psi.nomeUsuario,
-          especialidade: psi.crp ? `CRP: ${psi.crp}` : 'Psicologia Clínica',
-          avaliacao: '5.0',
-          preco: psi.precoConsulta ? psi.precoConsulta.toFixed(2) : '150.00',
-          horarios: ['09:00', '14:00', '16:30']
-        }));
-
-        setMedicos(psicologosDoBanco);
+        // Define os médicos na tela sem precisar do banco
+        setMedicos(psicologosMock);
 
       } catch (error) {
         console.log("Erro ao carregar dados na agenda:", error);
@@ -117,26 +127,19 @@ export default function AgendaScreen({ navigation }) {
   };
 
   const realizarAgendamentoAPI = async (medico, hora, diaObj) => {
-    if (!idPacienteAtual) return;
     setProcessandoAgenda(true);
 
     try {
-      const dataHoraConsulta = `${diaObj.dataIsoReal}T${hora}:00`;
+      // ⚠️ API real desligada para o print. Simulamos 1 segundo de carregamento e mostramos sucesso!
+      setTimeout(() => {
+        setProcessandoAgenda(false);
+        Alert.alert("Sucesso!", "Sua consulta foi agendada e já está no seu painel.", [
+          { text: "Ver Consultas", onPress: () => navigation.navigate('Consultas') }
+        ]);
+      }, 1000);
 
-      await api.post('/consultas/agendar', null, {
-        params: {
-          idPaciente: idPacienteAtual,
-          idPsicologo: medico.id,
-          dataHora: dataHoraConsulta
-        }
-      });
-
-      Alert.alert("Sucesso!", "Sua consulta foi agendada e já está no seu painel.", [
-        { text: "Ver Consultas", onPress: () => navigation.navigate('Consultas') }
-      ]);
     } catch (error) {
       Alert.alert("Erro", "Não foi possível agendar a consulta no momento.");
-    } finally {
       setProcessandoAgenda(false);
     }
   };
@@ -154,7 +157,6 @@ export default function AgendaScreen({ navigation }) {
         </Text>
 
         <TouchableOpacity style={styles.fullCalendarButton} onPress={() => setMostrarCalendario(true)}>
-          {/* 👇 Ícone e Texto em Azul Ciano 👇 */}
           <Ionicons name="calendar-outline" size={18} color="#BECFBB" />
           <Text style={styles.fullCalendarText}>Calendário</Text>
         </TouchableOpacity>
@@ -272,7 +274,6 @@ const styles = StyleSheet.create({
   calendarControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 15 },
   monthText: { fontSize: 18, fontWeight: 'bold', color: '#131826', textTransform: 'capitalize' },
 
-  /* 👇 Fundo Azul Escuro para destacar o Ciano 👇 */
   fullCalendarButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#131826', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3 },
   fullCalendarText: { color: '#BECFBB', fontSize: 14, fontWeight: 'bold', marginLeft: 5 },
 

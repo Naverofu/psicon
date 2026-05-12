@@ -10,7 +10,7 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
-  Image // INJEÇÃO: Importação de Imagem
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,8 +27,6 @@ export default function PsicologoHomeScreen({ navigation }) {
   const [nomeUsuario, setNomeUsuario] = useState('Dra.');
   const [iniciais, setIniciais] = useState('Psi');
   const [crpOuEmail, setCrpOuEmail] = useState('');
-
-  // 👇 INJEÇÃO: Estado para guardar a Foto 👇
   const [fotoPerfil, setFotoPerfil] = useState(null);
 
   // Estado da Emergência
@@ -56,32 +54,29 @@ export default function PsicologoHomeScreen({ navigation }) {
         setIniciais(gerouIniciais.toUpperCase());
         setCrpOuEmail(usuario.crp ? `CRP: ${usuario.crp}` : usuario.emailUsuario);
         setDisponivelEmergencia(usuario.disponivelEmergencia || false);
-
-        // Puxa a imagem em Base64
         setFotoPerfil(usuario.fotoPerfil || null);
 
         try {
-          const response = await api.get(`/consultas/psicologo/${usuario.idUsuario}`);
-          const todasConsultas = response.data;
+          // 👇 INJEÇÃO PARA O PRINT: Dados fixos de super-heróis na agenda de hoje 👇
+          // A chamada real ao banco (api.get) foi comentada para forçar os prints
 
-          const formatadas = [];
-          todasConsultas.forEach(c => {
-            if (c.statusConsulta === 'AGENDADA' || c.statusConsulta === 'EM_ANDAMENTO') {
-              const dataObj = new Date(c.dataHoraConsulta);
-              const horaStr = String(dataObj.getHours()).padStart(2, '0');
-              const minutoStr = String(dataObj.getMinutes()).padStart(2, '0');
-
-              formatadas.push({
-                id: c.idConsulta ? c.idConsulta.toString() : Math.random().toString(),
-                paciente: c.pacienteTitular ? c.pacienteTitular.nomeUsuario : 'Paciente',
-                hora: `${horaStr}:${minutoStr}`,
-                tipo: c.tipoConsulta === 'NORMAL' ? 'Terapia Online' : 'Plantão de Emergência',
-                status: c.statusConsulta === 'AGENDADA' ? 'Confirmada' : 'Em Plantão'
-              });
+          const formatadas = [
+            {
+              id: '1',
+              paciente: 'Peter Parker (Homem-Aranha)',
+              hora: '14:00',
+              tipo: 'Terapia Online',
+              status: 'Confirmada'
+            },
+            {
+              id: '2',
+              paciente: 'Wanda Maximoff (Feiticeira Escarlate)',
+              hora: '16:00',
+              tipo: 'Terapia Online',
+              status: 'Confirmada'
             }
-          });
+          ];
 
-          formatadas.sort((a, b) => a.hora.localeCompare(b.hora));
           setConsultasHoje(formatadas);
 
         } catch (erroConsultas) {
@@ -120,19 +115,21 @@ export default function PsicologoHomeScreen({ navigation }) {
     const novoEstado = !disponivelEmergencia;
 
     try {
-      await api.put(`/usuarios/${psicologoId}/emergencia?disponivel=${novoEstado}`);
-      setDisponivelEmergencia(novoEstado);
+      // 👇 INJEÇÃO: Simula o carregamento do plantão sem depender do backend
+      setTimeout(async () => {
+        setDisponivelEmergencia(novoEstado);
 
-      const jsonValue = await AsyncStorage.getItem('usuarioData');
-      if (jsonValue != null) {
-        let usuario = JSON.parse(jsonValue);
-        usuario.disponivelEmergencia = novoEstado;
-        await AsyncStorage.setItem('usuarioData', JSON.stringify(usuario));
-      }
+        const jsonValue = await AsyncStorage.getItem('usuarioData');
+        if (jsonValue != null) {
+          let usuario = JSON.parse(jsonValue);
+          usuario.disponivelEmergencia = novoEstado;
+          await AsyncStorage.setItem('usuarioData', JSON.stringify(usuario));
+        }
+        setCarregandoEmergencia(false);
+      }, 500);
+
     } catch (error) {
       console.log("Erro ao alterar plantão:", error);
-      alert("Não foi possível alterar o status do plantão. Verifique a conexão.");
-    } finally {
       setCarregandoEmergencia(false);
     }
   };
@@ -153,7 +150,6 @@ export default function PsicologoHomeScreen({ navigation }) {
             )}
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={abrirMenu}>
-            {/* 👇 INJEÇÃO: Imagem no Header do Psicólogo 👇 */}
             {fotoPerfil ? (
               <Image source={{ uri: fotoPerfil }} style={styles.profileImageSmall} />
             ) : (
@@ -274,7 +270,6 @@ export default function PsicologoHomeScreen({ navigation }) {
           <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
             <View style={styles.sideMenuHeader}>
               <View style={styles.sideMenuProfile}>
-                {/* 👇 INJEÇÃO: Imagem no Menu do Psicólogo 👇 */}
                 {fotoPerfil ? (
                   <Image source={{ uri: fotoPerfil }} style={styles.profileImageLarge} />
                 ) : (
@@ -324,10 +319,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, marginBottom: 25 },
   greetingText: { fontSize: 26, fontWeight: 'bold', color: '#131826' },
   subtitleText: { fontSize: 15, color: '#A0A0A0', marginTop: 4 },
-  profileButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#1E88E5', overflow: 'hidden' }, // overflow para a imagem não vazar do circulo
+  profileButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#1E88E5', overflow: 'hidden' },
   profileText: { fontSize: 18, fontWeight: 'bold', color: '#1E88E5' },
-  profileImageSmall: { width: 50, height: 50, borderRadius: 25 }, // INJEÇÃO
-  profileImageLarge: { width: 70, height: 70, borderRadius: 35 }, // INJEÇÃO
+  profileImageSmall: { width: 50, height: 50, borderRadius: 25 },
+  profileImageLarge: { width: 70, height: 70, borderRadius: 35 },
   statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   statCard: { flex: 0.48, backgroundColor: '#131826', padding: 20, borderRadius: 20, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6 },
   statValue: { fontSize: 24, fontWeight: 'bold', color: '#FFF', marginTop: 10 },
@@ -355,7 +350,7 @@ const styles = StyleSheet.create({
   modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   sideMenu: { width: width * 0.75, backgroundColor: '#FFF', height: '100%', position: 'absolute', right: 0, shadowColor: '#000', shadowOffset: { width: -5, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 },
   sideMenuHeader: { backgroundColor: '#BECFBB', padding: 30, paddingTop: 60, borderBottomLeftRadius: 30 },
-  sideMenuProfile: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden' }, // overflow hidden garante bordas arredondadas da foto
+  sideMenuProfile: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden' },
   sideMenuName: { color: '#131826', fontSize: 22, fontWeight: 'bold' },
   sideMenuEmail: { color: '#131826', fontSize: 14 },
   menuItemsContainer: { padding: 20, paddingTop: 30 },

@@ -137,7 +137,7 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               key={item.id}
               style={[styles.moodItem, humorSelecionado === item.id && styles.moodItemSelected]}
-              onPress={() => salvarHumorHoje(item.id)} /* 👇 Agora chama a função de salvar 👇 */
+              onPress={() => salvarHumorHoje(item.id)}
             >
               <Text style={styles.moodEmoji}>{item.emoji}</Text>
               <Text style={[styles.moodLabel, humorSelecionado === item.id && styles.moodLabelSelected]}>
@@ -152,7 +152,8 @@ export default function HomeScreen({ navigation }) {
             <Ionicons name="calendar" size={20} color="#BECFBB" />
             <Text style={styles.appointmentTitle}>Sua consulta é hoje!</Text>
           </View>
-          <Text style={styles.doctorName}>Dra. Ana Souza</Text>
+          {/* 👇 AQUI ESTÁ A NOSSA SUPER-HEROÍNA 👇 */}
+          <Text style={styles.doctorName}>Dra. Diana (Mulher-Maravilha)</Text>
           <Text style={styles.appointmentTime}>14:00 - 15:00 • Terapia Cognitiva</Text>
 
           <TouchableOpacity

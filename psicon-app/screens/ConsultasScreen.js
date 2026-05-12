@@ -15,74 +15,27 @@ import api from '../services/api';
 export default function ConsultasScreen({ navigation }) {
   const [abaAtiva, setAbaAtiva] = useState('Proximas');
 
-  // Nossas variáveis agora começam vazias para receber os dados reais do Java
-  const [consultasPendentes, setConsultasPendentes] = useState([]);
-  const [consultasHistorico, setConsultasHistorico] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  // 👇 INJEÇÃO PARA OS PRINTS: Dados fixos de super-heróis 👇
+  const [consultasPendentes, setConsultasPendentes] = useState([
+    { id: '1', data: '24/04/2026', hora: '14:00 - 15:00', psicologo: 'Dra. Diana (Mulher-Maravilha)', status: 'Confirmada', tipo: 'Online' }
+  ]);
 
-  // 👇 INJEÇÃO: Busca as consultas do paciente no banco de dados 👇
+  const [consultasHistorico, setConsultasHistorico] = useState([
+    { id: '2', data: '15/03/2026', hora: '10:00 - 11:00', psicologo: 'Dr. Bruce Wayne (Batman)', status: 'Realizada', tipo: 'Online' },
+    { id: '3', data: '02/02/2026', hora: '16:00 - 17:00', psicologo: 'Dr. Bruce Wayne (Batman)', status: 'Realizada', tipo: 'Online' }
+  ]);
+
+  // Como estamos a usar dados fixos para os prints, não precisamos da tela de "carregando"
+  const [carregando, setCarregando] = useState(false);
+
   useEffect(() => {
-    const carregarConsultas = async () => {
-      try {
-        const jsonValue = await AsyncStorage.getItem('usuarioData');
-        if (jsonValue != null) {
-          const usuario = JSON.parse(jsonValue);
-
-          // Chama a rota do Spring Boot que lista as consultas do paciente
-          const response = await api.get(`/consultas/paciente/${usuario.idUsuario}`);
-          const todasConsultas = response.data;
-
-          const pendentes = [];
-          const historico = [];
-
-          todasConsultas.forEach(c => {
-            // Formatação da data (Ex: 2026-05-10T14:30:00 -> 10/05/2026)
-            const dataObj = new Date(c.dataHoraConsulta);
-            const dia = String(dataObj.getDate()).padStart(2, '0');
-            const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-            const ano = dataObj.getFullYear();
-
-            const horaStr = String(dataObj.getHours()).padStart(2, '0');
-            const minutoStr = String(dataObj.getMinutes()).padStart(2, '0');
-            // Simula o fim da sessão (1 hora depois)
-            const horaFimStr = String(dataObj.getHours() + 1).padStart(2, '0');
-
-            const consultaFormatada = {
-              id: c.idConsulta ? c.idConsulta.toString() : Math.random().toString(),
-              data: `${dia}/${mes}/${ano}`,
-              hora: `${horaStr}:${minutoStr} - ${horaFimStr}:${minutoStr}`,
-              psicologo: c.psicologo ? c.psicologo.nomeUsuario : 'Psicólogo',
-              status: c.statusConsulta === 'AGENDADA' ? 'Confirmada' : c.statusConsulta,
-              tipo: c.tipoConsulta === 'NORMAL' ? 'Online' : 'Emergência'
-            };
-
-            // Separa nas abas corretas dependendo do status vindo do banco
-            if (c.statusConsulta === 'AGENDADA' || c.statusConsulta === 'EM_ANDAMENTO') {
-              pendentes.push(consultaFormatada);
-            } else {
-              historico.push(consultaFormatada);
-            }
-          });
-
-          setConsultasPendentes(pendentes);
-          setConsultasHistorico(historico);
-        }
-      } catch (error) {
-        console.log("Erro ao buscar consultas:", error);
-      } finally {
-        setCarregando(false);
-      }
-    };
-
-    // Ouve sempre que a tela ganha foco para recarregar a lista (caso o usuário tenha acabado de agendar uma)
-    const unsubscribe = navigation.addListener('focus', () => {
-      setCarregando(true);
-      carregarConsultas();
-    });
-
+    // ⚠️ Desliguei a busca real da base de dados temporariamente para forçar a exibição dos heróis!
+    /*
+    const carregarConsultas = async () => { ... }
+    const unsubscribe = navigation.addListener('focus', () => { ... });
     return unsubscribe;
+    */
   }, [navigation]);
-  // 👆 FIM DA INJEÇÃO 👆
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -148,7 +101,6 @@ export default function ConsultasScreen({ navigation }) {
 
         ) : (
           <View>
-            {/* NOVO BOTÃO DE ACESSO RÁPIDO AOS PAGAMENTOS! */}
             <TouchableOpacity
               style={styles.pagamentosCard}
               onPress={() => navigation.navigate('Pagamentos')}
@@ -212,8 +164,6 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 14, color: '#666', marginLeft: 6 },
   joinButton: { backgroundColor: '#BECFBB', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
   joinButtonText: { color: '#131826', fontWeight: 'bold', fontSize: 15 },
-
-  /* ESTILOS DO NOVO BOTÃO DE PAGAMENTOS */
   pagamentosCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 20, borderRadius: 20, marginBottom: 25, elevation: 4, shadowColor: '#BECFBB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, borderWidth: 1, borderColor: '#E0FFFF' },
   pagamentosIconContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#131826', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   pagamentosTextContainer: { flex: 1 },
